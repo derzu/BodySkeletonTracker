@@ -1,0 +1,11 @@
+CXX = g++
+
+CXXFLAGS += -c -Wall $(shell pkg-config --cflags opencv)
+LDFLAGS += $(shell pkg-config --libs --static opencv) -I include
+
+all: BodySkeletonTracker
+
+BodySkeletonTracker:
+	$(CXX) src/main.cpp src/Skeleton.cpp src/Viewer.cpp $(LDFLAGS) -o Bin/x64-Release/BodySkeletonTracker
+
+clean: ; rm -f src/*.o Bin/x64-Release/BodySkeletonTracker

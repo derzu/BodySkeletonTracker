@@ -1,0 +1,14 @@
+#### Requirement ####
+Opencv:  version used: opencv-3.2.0
+OpenNI2: version used: OpenNI-Linux-x64-2.3
+         Required just if used the with the Depth Camera.
+
+
+#### Compile #### (Just tested on Linux Ubuntu 14.04)
+ - Makefile.noDepth:
+      Uses you webcam
+ - Makefile.depth
+      Uses a depth camera, needs OpenNI2 driver.
+ - Default Makefile is the Makefile.depth
+ 
+
