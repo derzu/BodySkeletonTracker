@@ -1,23 +1,3 @@
-/*****************************************************************************
-*                                                                            *
-*  OpenNI 2.x Alpha                                                          *
-*  Copyright (C) 2012 PrimeSense Ltd.                                        *
-*                                                                            *
-*  This file is part of OpenNI.                                              *
-*                                                                            *
-*  Licensed under the Apache License, Version 2.0 (the "License");           *
-*  you may not use this file except in compliance with the License.          *
-*  You may obtain a copy of the License at                                   *
-*                                                                            *
-*      http://www.apache.org/licenses/LICENSE-2.0                            *
-*                                                                            *
-*  Unless required by applicable law or agreed to in writing, software       *
-*  distributed under the License is distributed on an "AS IS" BASIS,         *
-*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.  *
-*  See the License for the specific language governing permissions and       *
-*  limitations under the License.                                            *
-*                                                                            *
-*****************************************************************************/
 #include "Viewer.h"
 
 #include <math.h>
@@ -228,6 +208,7 @@ void SampleViewer::display()
 		Mat frame = srcFrame;
 		//Mat frame = binarizedFirst;
 
+		// mode webcam RGB, discard the first 10 frames, because they can be too white.
 		if (frameCount>10) {
 #endif
 
@@ -249,11 +230,10 @@ printf("lines.size=%d\n", (int)lines.size());
 			line(frame, Point(l[0]*subSample, l[1]*subSample), Point(l[2]*subSample, l[3]*subSample), Scalar(0, 0, 255), 3, CV_AA);
 		}*/
 
-		Mat * skeleton = skel->skeletization(binarized);
-		//skel->removeLixo(skeleton, 0);
+		Mat * skeleton = skel->thinning(binarized);
 		skel->removeSmallsRegions(skeleton);
 		skel->locateMaximus(skeleton);
-		std::list<cv::Point> bdireito = skel->getSkeletonBraco(skeleton, true);
+		std::vector<cv::Point> bdireito = skel->getSkeletonArm(skeleton, true);
 
 
 		skel->locateShoulders(&binarizedCp);

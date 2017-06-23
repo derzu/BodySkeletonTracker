@@ -2,7 +2,7 @@
 #define SKELETON_H
 
 #include <opencv2/highgui.hpp>
-#include <list>
+#include <vector>
 
 class Skeleton {
     private:
@@ -32,17 +32,16 @@ class Skeleton {
 	void zeraMaximus();
 	void setMaximus();
 	void drawMarkers(cv::Mat &frame);
-	void removeLixo(cv::Mat *frame, int cc);
 	void removeSmallsRegions(cv::Mat * frame);
 	void drawOverFrame(cv::Mat * skelImg, cv::Mat * frame);
-	void drawOverFrame(std::list<cv::Point> pontos, cv::Mat * frame);
-	cv::Mat * skeletization(cv::Mat &binarized);
+	void drawOverFrame(std::vector<cv::Point> pontos, cv::Mat * frame);
+	cv::Mat * thinning(cv::Mat &binarized);
 	void detectBiggerRegion(cv::Mat * frame);
 	void clearRegion(unsigned char * frame, int x, int y);
 	void getSizeRegion(unsigned char * frame, int x, int y, int *quant);
 	cv::Point mediaPoint(cv::Mat * frame);
 	std::vector<cv::Point> detectaRetas(cv::Mat * skeleton, bool right);
-	std::list<cv::Point> getSkeletonBraco(cv::Mat * skeleton, bool right);
+	std::vector<cv::Point> getSkeletonArm(cv::Mat * skeleton, bool right);
 };
 
 

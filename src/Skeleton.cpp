@@ -3,6 +3,8 @@
 #include <GL/freeglut.h>
 #include <opencv2/imgproc.hpp>
 
+#include <list>
+
 using namespace cv;
 
 Skeleton::Skeleton(int width, int height, int subSample) {
@@ -334,27 +336,6 @@ void Skeleton::drawMarkers(Mat &frame) {
 }
 
 
-void Skeleton::removeLixo(Mat *frame, int cc) {
-	int x,y;
-	int w = frame->cols;
-	int h = frame->rows;
-	int c=0;
-
-	for (y=0 ; y<h ; y++) {
-		for (x=0 ; x<w ; x++) {
-			if (	frame->data[(y-1)*w+x-1]==0 && frame->data[(y-1)*w+x]==0   && frame->data[(y-1)*w+x+1]==0 &&
-				frame->data[ y   *w+x-1]==0 && frame->data[ y   *w+x]==255 && frame->data[ y   *w+x+1]==0 &&
-				frame->data[(y+1)*w+x-1]==0 && frame->data[(y+1)*w+x]==0   && frame->data[(y+1)*w+x+1]==0)
-			{
-				frame->data[ y   *w+x]=0;
-				c++;
-			}
-		}
-	}
-	
-	//printf("Pixels removidos = %d\n", c);
-}
-
 
 void Skeleton::drawOverFrame(Mat * skelImg, Mat * frame) {
 	Scalar cor = Scalar(0,255,0);
@@ -380,11 +361,11 @@ void Skeleton::drawOverFrame(Mat * skelImg, Mat * frame) {
 }
 
 
-void Skeleton::drawOverFrame(std::list<cv::Point> pontos, Mat * frame) {
+void Skeleton::drawOverFrame(std::vector<cv::Point> pontos, Mat * frame) {
 	Scalar cor = Scalar(0,255,255);
 	Point p;
 
-	for (std::list<Point>::iterator it = pontos.begin(); it != pontos.end(); ++it) {
+	for (std::vector<Point>::iterator it = pontos.begin(); it != pontos.end(); ++it) {
 		p = *it;
 		circle(*frame, Point(p.x*subSample, p.y*subSample), 2, cor, 2, 8, 0);
 	}
@@ -508,18 +489,25 @@ std::vector<cv::Point> Skeleton::detectaRetas(Mat * skeleton, bool right) {
 }
 
 
-
-std::list<cv::Point> Skeleton::getSkeletonBraco(Mat * skeleton, bool right) {
+/**
+ * Localiza os pontos do esqueleto do braco direito ou esquerdo.
+ *
+ */
+std::vector<cv::Point> Skeleton::getSkeletonArm(Mat * skeleton, bool right) {
 	int w = skeleton->cols;
 	int h = skeleton->rows;
 	int x, y;
 	std::list<cv::Point> pontos;
-	std::list<cv::Point> pontos_ordered;
+	std::vector<cv::Point> pontos_ordered;
+	std::vector<cv::Point> pontos_ordered_smoth;
 	Point p;
 
-	int ini = w/2-afa, fim = 0;
+	int centerWs = centerW/subSample;
+	int ini = centerWs-afa*1.2, fim = 0;
+	if (ini<0) ini = 0;
 	if (right) {
-		ini = w/2+afa;
+		ini = centerWs+afa*1.2;
+		if (ini>=w) ini = w-1;
 		fim = w;
 	}
 
@@ -541,6 +529,7 @@ std::list<cv::Point> Skeleton::getSkeletonBraco(Mat * skeleton, bool right) {
 	Point closestP;
 	int tam = 0;
 	
+	// Ordena os pontos
 	// acha o mais proximo
 	if (!pontos.empty()) {
 		pontos_ordered.push_back(pontos.front());
@@ -552,7 +541,7 @@ std::list<cv::Point> Skeleton::getSkeletonBraco(Mat * skeleton, bool right) {
 			std::list<Point>::iterator it;
 			for (it = pontos.begin(); it != pontos.end(); ++it) {
 				dist = euclideanDist(first, *it);
-				if (dist<menorDist && dist<20) {
+				if (dist<menorDist && dist<10) {
 					menorDist = dist;
 					closest = it;
 					if (dist<2) {
@@ -569,7 +558,40 @@ std::list<cv::Point> Skeleton::getSkeletonBraco(Mat * skeleton, bool right) {
 		}
 	}
 
-	return pontos_ordered;
+
+	// suaviza braco. aplica uma mascara de media de tamanho 3x3
+	Point m;
+	int q;
+	for (int i=0; i<pontos_ordered.size() ; i++) {
+		m = Point(0,0);
+		q = 1;
+		if (i-1>=0) {
+			m.x += pontos_ordered[i-1].x;
+			m.y += pontos_ordered[i-1].y;
+			q++;
+		}
+		m.x += pontos_ordered[i].x;
+		m.y += pontos_ordered[i].y;
+		if (i+1<pontos_ordered.size()) {
+			m.x += pontos_ordered[i+1].x;
+			m.y += pontos_ordered[i+1].y;
+			q++;
+		}
+		m.x /= q;
+		m.y /= q;
+		pontos_ordered_smoth.push_back(m);
+	}
+
+
+	// calcula as declividades
+	for (int i=0; i<pontos_ordered_smoth.size() ; i++) {
+		double ang = atan2(abs(pontos_ordered_smoth[i].y-pontos_ordered_smoth[i-1].y), abs(pontos_ordered_smoth[i].x-pontos_ordered_smoth[i-1].x) );
+		printf("ang: %lf\n", ang*180.);
+	}
+	printf("\n\n\n\n");
+
+
+	return pontos_ordered_smoth;
 }
 
 
@@ -604,8 +626,13 @@ void Skeleton::getSizeRegion(unsigned char * frame, int x, int y, int *quant) {
 	}
 }
 
-
-cv::Mat * Skeleton::skeletization(cv::Mat &binarized) {
+/**
+ * Thinning/skeletonization operation over the binarized region of the body
+ *
+ * @param binarized - Mat with the binarized image
+ * @return the thinning skeleton
+ */
+cv::Mat * Skeleton::thinning(cv::Mat &binarized) {
 	int width = binarized.cols;
 	int height = binarized.rows;
 	Mat * skeleton = new Mat(cv::Size(width, height), CV_8UC1, cv::Scalar(0));
