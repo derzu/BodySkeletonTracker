@@ -192,7 +192,10 @@ void Skeleton::setMaximus() {
 */
 }
 
-
+/**
+ * Aqui ficam as regras de localização dos principais pontos do corpo.
+ * 
+ **/
 void Skeleton::locateMainPoints(cv::Mat &frame) {
 	float afa28 = afa*subSample*2.8;
 	int shift = 50;
@@ -201,8 +204,26 @@ void Skeleton::locateMainPoints(cv::Mat &frame) {
 	head = maxTopCenter;
 
 
+	// Right Hand
+	rightHand.x = 0;
+	// Analisando apenas o lado direito do corpo. Sera mao se:
+	if (maxRight.x-centerW > afa28) {// Certeza absoluta. Ponto mais a direita esta muito longe, entao nao tem como ser um cotovelo, sera uma mao.
+		// O ponto mais a direita
+		rightHand = maxRight;
+	}
+	// O ponto mais alto tiver a direita do ponto mais baixo. Ou:
+	// O ponto mais baixo, estiver acima da linha da cintura, e a distancia entre o ponto mais alto e o ombro for grande.
+	else if ((maxTopRight.x > maxBottomRight.x) || (maxBottomRight.y < centerH+shift && euclideanDist(maxTopRight, rightShoulder)>50)) {
+		// O ponto mais alto
+		rightHand = maxTopRight;
+	} else {
+		// O ponto mais baixo
+		rightHand = maxBottomRight;
+	}
+
 
 	// Left Hand
+	leftHand.x = 0;
 	// Analisando apenas o lado esquerdo do corpo. Sera mao se:
 	if (centerW-maxLeft.x > afa28) { // Certeza absoluta. Ponto mais a esquerda esta muito longe, entao nao tem como ser um cotovelo, sera uma mao.
 		// O ponto mais a esquerda
@@ -218,55 +239,73 @@ void Skeleton::locateMainPoints(cv::Mat &frame) {
 		leftHand = maxBottomLeft;
 	}
 
-	// Right Hand
-	// Analisando apenas o lado direito do corpo. Sera mao se:
-	if (maxRight.x-centerW > afa28) {// Certeza absoluta. Ponto mais a direita esta muito longe, entao nao tem como ser um cotovelo, sera uma mao.
-		// O ponto mais a direita
-		rightHand = maxRight;
-	}
-	// Se o ponto mais alto tiver a direita do ponto mais baixo. Ou:
-	// Se o ponto mais baixo, estiver acima da linha da cintura, e a distancia entre o ponto mais alto e o ombro for grande.
-	else if ((maxTopRight.x > maxBottomRight.x) || (maxBottomRight.y < centerH+shift && euclideanDist(maxTopRight, rightShoulder)>50)) {
-		// O ponto mais alto
-		rightHand = maxTopRight;
-	} else {
-		// O ponto mais baixo
-		rightHand = maxBottomRight;
-	}
-
 
 
 	// Right Elbow/Cotovelo
 	rightElbow.x=0;
 	// Analisando apenas o lado direito do corpo. Sera cotovelo se:
-	// O y do mais baixo e do mais a direita forem muito proximos, mas os x distantes.
-	if (abs(maxRight.y-maxBottomRight.y)<10 && abs(maxRight.x-maxBottomRight.x)>15) {
+
+	// Mao esta mais a esquerda do que o cotovelo E o cotovelo nao pode estar proxima da mao E o x do Top, do Right e do Bottom nao estarem muito proximos E distante da mao
+	if ( (maxRight.x-rightHand.x > 5) && euclideanDist(maxRight, rightHand)>20  && !( abs(maxRight.x-maxTopRight.x) < 15 && abs(maxRight.x-maxBottomRight.x) < 30) &&
+		euclideanDist(maxRight, rightHand)>50) {
+		rightElbow = maxRight;
+		//printf("\n\nelbow::case1\n");
+	}
+	// O ponto mais baixo estiver na linha da cintura (linha da cintura +- shift) E distante da mao
+	else if (maxBottomRight.y > centerH-shift*1.3 && maxBottomRight.y < centerH+shift && euclideanDist(maxBottomRight, rightHand)>50 &&
+               !( abs(maxBottomRight.y-maxRight.y) < 20 && abs(maxBottomRight.y-middleArmRight.y) < 20) ) {
+		rightElbow = maxBottomRight;
+		//printf("\n\nelbow::case2\n");
+	}
+	// O y do mais baixo e do mais a direita e o do middleArm forem muito proximos. E o y do ombro longe. E distante da mao
+	else if (abs(maxRight.y-maxBottomRight.y)<35 && abs(maxRight.y-middleArmRight.y)<35 && abs(rightShoulder.y-middleArmRight.y)>30 && euclideanDist(middleArmRight, rightHand)>50 ) {
 		rightElbow = middleArmRight;
+		//printf("\n\nelbow::case3\n");
+	}
+	// O x do mais baixo e do mais a direita e o do middleArm forem muito proximos. E o y do ombro longe. E distante da mao
+	else if (abs(maxRight.x-maxBottomRight.x)<35 && abs(maxRight.x-middleArmRight.x)<35 && /*abs(rightShoulder.y-middleArmRight.y)>30 &&*/ euclideanDist(middleArmRight, rightHand)>50 ) {
+		rightElbow = middleArmRight;
+		//printf("\n\nelbow::case4\n");
 	}
 	// A mao estiver abaixo do centro OU
 	// A altura da mao para o ombro for pequena E a altura da mao para o ponto mais baixo for pequena E mao direita nao esta colada no corpo.
 	else if ((rightHand.y > centerH+shift) || (abs(rightShoulder.y-rightHand.y)<40 && abs(maxBottomRight.y-rightHand.y)<30 && rightHand.x-centerW > afa28)) { 
 		rightElbow = Point((rightHand.x+rightShoulder.x)/2, (rightHand.y+rightShoulder.y)/2); // braco esticado
+		//printf("\n\nelbow::case5\n");
 	}
-	else if (maxBottomRight.y > centerH-shift && maxBottomRight.y < centerH+shift) {
-		rightElbow = maxBottomRight;
-	}
-	else {
-		// TODO testar esse. botar ese no ESQUERDO tambem
-		rightElbow = maxRight;
-	}
+
+
 
 	// Left Elbow/Cotovelo
 	leftElbow.x=0;
-	// O y do mais baixo e do mais a direita forem muito proximos, mas os x distantes.
-	if (abs(maxLeft.y-maxBottomLeft.y)<10 && abs(maxLeft.x-maxBottomLeft.x)>15) {
-		leftElbow = middleArmLeft;
+
+	// Mao esta mais a direita do que o cotovelo E o cotovelo nao pode estar proxima da mao E o x do Top, do Left e do Bottom nao estarem muito proximos E distante da mao
+	if ( (leftHand.x-maxLeft.x > 5) && euclideanDist(maxLeft, leftHand)>20  && !( abs(maxLeft.x-maxTopLeft.x) < 15 && abs(maxLeft.x-maxBottomLeft.x) < 30) &&
+		euclideanDist(maxLeft, leftHand)>50) {
+		leftElbow = maxLeft;
+		//printf("\n\nelbow::case1\n");
 	}
-	else if ((leftHand.y > centerH+shift) || (abs(leftShoulder.y-leftHand.y)<40 && abs(maxBottomLeft.y-leftHand.y)<30 && centerW-leftHand.x > afa28)) { // braco esticado
-		leftElbow = Point((leftHand.x+leftShoulder.x)/2, (leftHand.y+leftShoulder.y)/2);
-	}
-	else if (maxBottomLeft.y > centerH-shift && maxBottomLeft.y < centerH+shift) {
+	// O ponto mais baixo estiver na linha da cintura (linha da cintura +- shift) E distante da mao
+	else if (maxBottomLeft.y > centerH-shift*1.3 && maxBottomLeft.y < centerH+shift && euclideanDist(maxBottomLeft, leftHand)>50 &&
+               !( abs(maxBottomLeft.y-maxLeft.y) < 20 && abs(maxBottomLeft.y-middleArmLeft.y) < 20) ) {
 		leftElbow = maxBottomLeft;
+		//printf("\n\nelbow::case2\n");
+	}
+	// O y do mais baixo e do mais a esquerda e o do middleArm forem muito proximos. E o y do ombro longe. E distante da mao
+	else if (abs(maxLeft.y-maxBottomLeft.y)<35 && abs(maxLeft.y-middleArmLeft.y)<35 && abs(leftShoulder.y-middleArmLeft.y)>30 && euclideanDist(middleArmLeft, leftHand)>50 ) {
+		leftElbow = middleArmLeft;
+		//printf("\n\nelbow::case3\n");
+	}
+	// O x do mais baixo e do mais a esquerda e o do middleArm forem muito proximos. E o y do ombro longe. E distante da mao
+	else if (abs(maxLeft.x-maxBottomLeft.x)<35 && abs(maxLeft.x-middleArmLeft.x)<35 && /*abs(leftShoulder.y-middleArmLeft.y)>30 &&*/ euclideanDist(middleArmLeft, leftHand)>50 ) {
+		leftElbow = middleArmLeft;
+		//printf("\n\nelbow::case4\n");
+	}
+	// A mao estiver abaixo do centro OU
+	// A altura da mao para o ombro for pequena E a altura da mao para o ponto mais baixo for pequena E mao direita nao esta colada no corpo.
+	else if ((leftHand.y > centerH+shift) || (abs(leftShoulder.y-leftHand.y)<40 && abs(maxBottomLeft.y-leftHand.y)<30 && leftHand.x-centerW > afa28)) { 
+		leftElbow = Point((leftHand.x+leftShoulder.x)/2, (leftHand.y+leftShoulder.y)/2); // braco esticado
+		//printf("\n\nelbow::case5\n");
 	}
 
 
@@ -289,6 +328,8 @@ void Skeleton::drawMarkers(Mat &frame) {
 	circle( frame, maxTopCenter,    7, Scalar(0,255,255), 2, 8, 0 );
 	circle( frame, maxTopRight,     7, Scalar(0,255,255), 2, 8, 0 );
 	circle( frame, maxTopLeft,      7, Scalar(0,255,255), 2, 8, 0 );
+	circle( frame, middleArmRight,  7, Scalar(255,255,255), 2, 8, 0 );
+	circle( frame, middleArmLeft,   7, Scalar(255,255,255), 2, 8, 0 );
 	//imgHand.copyTo(frame.rowRange(maxTopRight.y, maxTopRight.y+imgHand.rows).colRange(maxTopRight.x, maxTopRight.x+imgHand.cols));
 	/*if (maxTopLeft.x>0 && maxTopLeft.y>0) {
 		cv::Rect roi( maxTopLeft, cv::Size( imgHand.cols, imgHand.rows));
@@ -330,19 +371,21 @@ void Skeleton::drawMarkers(Mat &frame) {
 
 
 	// Maos
-	circle( frame, leftHand, 30, Scalar(255,0,255), 2, 8, 0 );
-	circle( frame, rightHand, 30, Scalar(255,0,255), 2, 8, 0 );
+	if (leftHand.x != 0)
+		circle( frame, leftHand, 30, Scalar(255,0,255), 2, 8, 0 );
+	if (rightHand.x != 0)
+		circle( frame, rightHand, 30, Scalar(255,0,255), 2, 8, 0 );
 
 
 	// Cotovelos
-	if (rightElbow.x!=0) {
+	if (rightElbow.x != 0) {
 		circle( frame, rightElbow, 30, Scalar(0,0,255), 2, 8, 0 );
 		line(frame, rightShoulder, rightElbow, c, 2, 8, 0 );
 		line(frame, rightElbow, rightHand, c, 2, 8, 0 );
 	} else {
 		line(frame, rightShoulder, rightHand, c, 2, 8, 0 );
 	}
-	if (leftElbow.x!=0) {
+	if (leftElbow.x != 0) {
 		circle( frame, leftElbow, 30, Scalar(0,0,255), 2, 8, 0 );
 		line(frame, leftShoulder, leftElbow, c, 2, 8, 0 );
 		line(frame, leftElbow, leftHand, c, 2, 8, 0 );
@@ -506,25 +549,35 @@ std::vector<cv::Point> Skeleton::detectaRetas(Mat * skeleton, bool right) {
 
 
 /**
- * Localiza o cotovelo a partir dos pontos do braco
+ * Localiza um possivel ponto do cotovelo a partir dos pontos do braco
  *
  **/
 cv::Point * Skeleton::getElbowHard(std::vector<cv::Point> &arm) {
 	cv::Point * p = NULL;
 
 	// calcula as declividades
-	double ang, angAnt=0, diff;
+	double ang1, ang2=0, ang3=0, diff;
 	for (int i=0; i<(int)arm.size()-1 ; i++) {
 		//printf("%dx%d - %dx%d\n", arm[i].x, arm[i].y, arm[i+1].x, arm[i+1].y);
 		if (euclideanDist(arm[i], arm[i+1])<5) {
-			ang = atan2(abs(arm[i].y-arm[i+1].y), abs(arm[i].x-arm[i+1].x) ) * 180.;
-			diff = abs(ang-angAnt);
-			//printf("ang: %.2lf(%.2lf)\n", ang, diff);
-			if (ang==angAnt && ang==0 && i>5) {
+			ang1 = atan2(abs(arm[i].y-arm[i+1].y), abs(arm[i].x-arm[i+1].x) ) * 180.;
+			if (ang1>250 && ang1<290)
+				ang1 = 270;
+			diff = abs(ang1-ang2);
+			
+			//printf("ang: %6.2lf(%6.2lf)\n", ang1, diff);
+			// localiza o ponto no meio da curva
+			if (ang1==ang2 && ang2==ang3 && ang1==0 && i>5) {
 				p = new Point(arm[i].x*subSample, arm[i].y*subSample);
-				return p;
+				break;
 			}
-			angAnt = ang;
+			else if (ang1==ang2 && ang2==ang3 && ang1==270 && i>5) {
+				p = new Point(arm[i].x*subSample, arm[i].y*subSample);
+				break;
+			}
+			// guarda os 3 ultimos angulos
+			ang3 = ang2;
+			ang2 = ang1;
 		}
 	
 	}
@@ -604,7 +657,7 @@ std::vector<cv::Point> Skeleton::getSkeletonArm(Mat * skeleton, bool right) {
 	}
 
 
-	// suaviza braco. aplica uma mascara de media de tamanho 3x3
+	// Suaviza braco. Aplica uma mascara de media em formato de + de tamanho 7x7
 	Point m;
 	int q;
 	for (int i=0; i<pontos_ordered.size() ; i++) {

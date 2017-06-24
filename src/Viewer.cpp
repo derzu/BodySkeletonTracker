@@ -17,7 +17,6 @@ SampleViewer* SampleViewer::ms_self = NULL;
 SampleViewer::SampleViewer(const char* strSampleName, const char* deviceUri)
 {
 #ifdef DEPTH
-	m_pClosestPoint = NULL;
 	m_pClosestPointListener = NULL;
 	m_pClosestPoint = new closest_point::ClosestPoint(deviceUri);
 	skelD = NULL;
@@ -64,13 +63,13 @@ SampleViewer::~SampleViewer()
 void SampleViewer::finalize()
 {
 #ifdef DEPTH
-	if (m_pClosestPoint != NULL)
+	if (m_pClosestPoint)
 	{
 		m_pClosestPoint->resetListener();
 		delete m_pClosestPoint;
 		m_pClosestPoint = NULL;
 	}
-	if (m_pClosestPointListener != NULL)
+	if (m_pClosestPointListener)
 	{
 		delete m_pClosestPointListener;
 		m_pClosestPointListener = NULL;
@@ -108,6 +107,7 @@ printf("Compilado SEM Depth\n");
 	while (1) {
 		display();
 		char c = (char)waitKey(10);
+		//char c = (char)waitKey(1000);
 	        if( c == 27 || c == 'q' || c == 'Q' )
         	        break;
 	}
@@ -150,6 +150,7 @@ void SampleViewer::display()
 
 
 
+	// So entra nesses if na primeira vez
 #ifdef DEPTH
 	if (m_pTexMap == NULL)
 	{
@@ -253,6 +254,8 @@ printf("lines.size=%d\n", (int)lines.size());
 		imshow("Skeleton Traker", frame );
 		//imshow("Skeleton Traker", binarized2 );
 //printf("aqui 6\n");
+		if (skeleton)
+			delete skeleton;
 	}
 
 }
