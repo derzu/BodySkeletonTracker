@@ -144,4 +144,7 @@ clean-objs:
 clean-defs:
 	rm -rf $(DEP_FILES)
 
+clean-temp:
+	rm *~ src/*~ include/*~
+
 clean: clean-objs clean-defs

@@ -213,7 +213,7 @@ void SampleViewer::display()
 #endif
 
 		Mat binarizedCp = binarized.clone();
-		skel->detectBiggerRegion(&binarized);
+		skel->detectBiggerRegion(binarized);
 
 		//Mat binarized2    (cv::Size(m_nTexMapX/subSample, m_nTexMapY/subSample), CV_8UC1, cv::Scalar(0));
 		//Mat binarizedFirst(cv::Size(m_nTexMapX/subSample, m_nTexMapY/subSample), CV_8UC1, cv::Scalar(0));
@@ -233,15 +233,17 @@ printf("lines.size=%d\n", (int)lines.size());
 		Mat * skeleton = skel->thinning(binarized);
 		skel->removeSmallsRegions(skeleton);
 		skel->locateMaximus(skeleton);
-		std::vector<cv::Point> bdireito = skel->getSkeletonArm(skeleton, true);
 
-
-		skel->locateShoulders(&binarizedCp);
+		skel->locateShoulders(binarizedCp);
 		skel->locateMainPoints(binarizedCp);
 
+		std::vector<cv::Point> bdireito = skel->getSkeletonArm(skeleton, true);
+		std::vector<cv::Point> besquerdo= skel->getSkeletonArm(skeleton, false);
+
 		//skel->drawOverFrame(&binarized2, &frame);
-		skel->drawOverFrame(skeleton, &frame);
-		skel->drawOverFrame(bdireito, &frame);
+		skel->drawOverFrame(skeleton, frame);
+		skel->drawOverFrame(bdireito, frame);
+		skel->drawOverFrame(besquerdo, frame);
 
 		skel->drawMarkers(frame);
 #ifndef DEPTH

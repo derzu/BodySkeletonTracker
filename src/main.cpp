@@ -16,10 +16,10 @@ printf("main::Compilado com Depth\n");
 printf("main::Compilado SEM Depth\n");
 #endif
 
-	if (argc > 1)
+	/*if (argc > 1)
 	{
 		deviceURI = argv[1];
-	}
+	}*/
 
 	SampleViewer sampleViewer("Body Skeleton Tracker", deviceURI);
 

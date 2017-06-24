@@ -18,7 +18,7 @@ public:
 	virtual ~SampleViewer();
 
 	virtual int init(int argc, char **argv);
-	virtual int run();	//Does not return
+	virtual int run();
 
 protected:
 	virtual void display();
