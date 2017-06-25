@@ -30,7 +30,7 @@ class Skeleton {
 	void initialize();
 	void locateMaximus(cv::Mat *frame);
 	void locateShoulders(cv::Mat &frame);
-	void locateMainPoints(cv::Mat &frame);
+	void locateMainBodyPoints(cv::Mat &frame);
 	void zeraMaximus();
 	void setMaximus();
 	void drawMarkers(cv::Mat &frame);

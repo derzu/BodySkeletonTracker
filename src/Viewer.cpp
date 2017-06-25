@@ -106,8 +106,8 @@ printf("Compilado SEM Depth\n");
 
 	while (1) {
 		display();
-		char c = (char)waitKey(10);
-		//char c = (char)waitKey(1000);
+		//char c = (char)waitKey(10);
+		char c = (char)waitKey(500);
 	        if( c == 27 || c == 'q' || c == 'Q' )
         	        break;
 	}
@@ -235,11 +235,10 @@ printf("lines.size=%d\n", (int)lines.size());
 		skel->removeSmallsRegions(skeleton);
 		skel->locateMaximus(skeleton);
 
-		skel->locateShoulders(binarizedCp);
-		skel->locateMainPoints(binarizedCp);
-
 		std::vector<cv::Point> bdireito = skel->getSkeletonArm(skeleton, true);
 		std::vector<cv::Point> besquerdo= skel->getSkeletonArm(skeleton, false);
+
+		skel->locateMainBodyPoints(binarizedCp);
 
 		//skel->drawOverFrame(&binarized2, &frame);
 		skel->drawOverFrame(skeleton, frame);
