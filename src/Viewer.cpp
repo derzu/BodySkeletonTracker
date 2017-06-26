@@ -239,6 +239,8 @@ void SampleViewer::display()
 
 		skel->drawMarkers(frame);
 
+		skel->detectTiagoCommands();
+
 		if (skeleton)
 			delete skeleton;
 #ifndef DEPTH

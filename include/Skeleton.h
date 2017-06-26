@@ -4,7 +4,7 @@
 #include <opencv2/highgui.hpp>
 #include <vector>
 
-#define BUF_SIZE 3
+#define BUF_SIZE 5
 
 class Skeleton {
     private:
@@ -41,6 +41,8 @@ class Skeleton {
 
 	// afastamento
 	int afa;
+	float afa28;
+	int shift;
 
     protected:
 	void initialize();
@@ -67,6 +69,7 @@ class Skeleton {
 	cv::Mat * thinning(cv::Mat &binarized);
 	void detectBiggerRegion(cv::Mat &frame);
 	std::vector<cv::Point> getSkeletonArm(cv::Mat * skeleton, bool right);
+	void detectTiagoCommands();
 
 };
 
