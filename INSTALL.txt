@@ -1,6 +1,6 @@
 #### Requirement ####
 Opencv:  version used: opencv-3.2.0
-OpenNI2: version used: OpenNI-Linux-x64-2.3
+OpenNI2: version used: OpenNI-Linux-x64-2.3 (http://www.orbbec3d.net/Tools_SDK_OpenNI/2-Linux.zip)
          Required just if used the with the Depth Camera.
 
 
