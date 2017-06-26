@@ -2,17 +2,21 @@
 #include <stdio.h>
 #include <GL/freeglut.h>
 #include <opencv2/imgproc.hpp>
-
+#include <strings.h>
 #include <list>
 
-#define DEBUG 1
+#include "AuxFuncs.h"
+
+//#define DEBUG
 
 using namespace cv;
 
 // TODO 
-// Media dos 10 ultimos
-// DONE Limpar os pontos
+// DOING Media dos 10 ultimos
+// DONE  Nao exibir os pontos quando nao encontra-los.
 // Cabeca nao pegar a mao quando levantar as maos
+// Melhorar o centroW e seus limiares
+// Gravar video
 
 Skeleton::Skeleton(int width, int height, int subSample) {
 	this->width = width;
@@ -27,19 +31,34 @@ void Skeleton::initialize() {
 
 	rightShoulder = Point(10, 10);
 	leftShoulder = Point(10, 10);
+
+	bzero(rightHandV,     sizeof(cv::Point)*BUF_SIZE);
+	bzero(rightElbowV,    sizeof(cv::Point)*BUF_SIZE);
+	bzero(rightShoulderV, sizeof(cv::Point)*BUF_SIZE);
+	bzero(leftHandV,      sizeof(cv::Point)*BUF_SIZE);
+	bzero(leftElbowV,     sizeof(cv::Point)*BUF_SIZE);
+	bzero(leftShoulderV,  sizeof(cv::Point)*BUF_SIZE);
+	bzero(headV,          sizeof(cv::Point)*BUF_SIZE);
+	bzero(centerWV,       sizeof(int)*BUF_SIZE);
+	bzero(centerHV,       sizeof(int)*BUF_SIZE);
+
+	rightHandH = rightElbowH = rightShoulderH = 0;
+	leftHandH  = leftElbowH  = leftShoulderH = 0;
+	headH = 0;
+	centerWHead = centerHHead = 0;
 }
+
 
 /**
  * Calculate de Euclidian distance between 2 points.
- **/
-float Skeleton::euclideanDist(Point& p, Point& q) {
+ **
+float euclideanDist(cv::Point& p, cv::Point& q) {
 	if (p.x==q.x && p.y==q.y)
 		return 0;
-	Point diff = p - q;
+	cv::Point diff = p - q;
 	return cv::sqrt(diff.x*diff.x + diff.y*diff.y);
 }
-
-
+*/
 void Skeleton::locateMaximus(cv::Mat *frame) {
 	int width = frame->cols;
 	int height = frame->rows;
@@ -111,6 +130,10 @@ void Skeleton::locateMaximus(cv::Mat *frame) {
 
 
 
+/**
+ * Localiza os ombros, tecnica bem simples. Pega a posicao X da cabeca adiciona +-afa e baixa o Y ate chegar em algum ponto valido
+ * Deve receber como parametro a imagem binarizada e nao o esqueleto.
+ **/
 void Skeleton::locateShoulders(cv::Mat &frame) {
 	int width = frame.cols;
 	int height = frame.rows;
@@ -121,7 +144,8 @@ void Skeleton::locateShoulders(cv::Mat &frame) {
 	char nAchou1 = 1;
 	char nAchou2 = 1;
 
-	for (int y = maxTopCenter.y/subSample+40; y < height; y++)
+	// Y varia do maxTop + 20 ate 2*height/3. Supoe que os ombros estao sempre acima de 2/3 da imagem
+	for (int y = head.y/subSample+20; y < 2*height/3; y++)
 	//for (int y = 0; y < height; y++)
 	{
 		//printf("Achei y=%d \n", y);
@@ -130,7 +154,9 @@ void Skeleton::locateShoulders(cv::Mat &frame) {
 		{
 			nAchou1 = 0;
 			rightShoulder.x = (centerWs+aff)*subSample;
-			rightShoulder.y = (y+10)*subSample;
+			rightShoulder.y = (y+10)*subSample; // adiciona 10 ao Y para ir para dentro do braco, nao ficar no ponto da borda.
+			rightShoulderV[rightShoulderH++ % BUF_SIZE] = rightShoulder;
+			rightShoulder = calculaMedia(rightShoulderV);
 
 			if (!nAchou2) break;
 		}
@@ -138,11 +164,15 @@ void Skeleton::locateShoulders(cv::Mat &frame) {
 		{
 			nAchou2 = 0;
 			leftShoulder.x = (centerWs-aff)*subSample;
-			leftShoulder.y = (y+10)*subSample;
+			leftShoulder.y = (y+10)*subSample; // adiciona 10 ao Y para ir para dentro do braco, nao ficar no ponto da borda.
+			leftShoulderV[leftShoulderH++ % BUF_SIZE] = leftShoulder;
+			leftShoulder = calculaMedia(leftShoulderV);
 
 			if (!nAchou1) break;
 		}
 	}
+
+//printf("0::centerWs = %d %d %d (%d)\n", centerWs, rightShoulder.x, leftShoulder.x, rightShoulder.x-leftShoulder.x);
 }
 
 
@@ -215,55 +245,67 @@ void Skeleton::setMaximus() {
 /**
  * Aqui ficam as regras de localização des alguns dos principais pontos do corpo:
  * Cabeca, ombros, cotovelos e maos.
- * 
+ * @param frame matriz binarizada e utilizada para detecao dos ombros.
  **/
 void Skeleton::locateMainBodyPoints(cv::Mat &frame) {
 	float afa28 = afa*subSample*2.8;
 	int shift = 50;
 
 	// Cabeca. Sempre e o ponto mais alto.
-	head = maxTopCenter;
+	if (maxTopCenter.x!=0) {
+		head = maxTopCenter;
+		headV[headH++ % BUF_SIZE] = head;
+		head = calculaMedia(headV);
+	}
 
 	// Ombros
 	locateShoulders(frame);
-
+//printf("1::centerWs = %d %d %d (%d)\n", centerW, rightShoulder.x, leftShoulder.x, rightShoulder.x-leftShoulder.x);
 	// Right Hand
 	rightHand.x = 0;
 	// Analisando apenas o lado direito do corpo. Sera mao se:
 	if (maxRight.x!=0 && maxRight.x-centerW > afa28) {// Certeza absoluta. Ponto mais a direita esta muito longe, entao nao tem como ser um cotovelo, sera uma mao.
 		// O ponto mais a direita
 		rightHand = maxRight;
-	}
 	// O ponto mais alto tiver a direita do ponto mais baixo. Ou:
 	// O ponto mais baixo, estiver acima da linha da cintura, e a distancia entre o ponto mais alto e o ombro for grande.
-	else if (maxTopRight.x!=0 && ((maxTopRight.x > maxBottomRight.x) || (maxBottomRight.y < centerH+shift && euclideanDist(maxTopRight, rightShoulder)>50))) {
+	} else if (maxTopRight.x!=0 && ((maxTopRight.x > maxBottomRight.x) || (maxBottomRight.y < centerH+shift && euclideanDist(maxTopRight, rightShoulder)>50))) {
 		// O ponto mais alto
 		rightHand = maxTopRight;
 	} else if (maxBottomRight.x!=0) {
 		// O ponto mais baixo
 		rightHand = maxBottomRight;
 	}
+	if (rightHand.x!=0) {
+		rightHandV[rightHandH++ % BUF_SIZE] = rightHand;
+		rightHand = calculaMedia(rightHandV);
+	}
 
-
+//printf("11:centerWs = %d %d %d (%d)\n", centerW, rightShoulder.x, leftShoulder.x, rightShoulder.x-leftShoulder.x);
 	// Left Hand
 	leftHand.x = 0;
 	// Analisando apenas o lado esquerdo do corpo. Sera mao se:
 	if (maxLeft.x!=0 && centerW-maxLeft.x > afa28) { // Certeza absoluta. Ponto mais a esquerda esta muito longe, entao nao tem como ser um cotovelo, sera uma mao.
 		// O ponto mais a esquerda
 		leftHand = maxLeft;
-	}
+		leftHandV[leftHandH++ % BUF_SIZE] = leftHand;
 	// Se o ponto mais alto tiver a esquerda do ponto mais baixo. Ou:
 	// Se o ponto mais baixo, estiver acima da linha da cintura, e a distancia entre o ponto mais alto e o ombro for grande.
-	else if (maxTopLeft.x!=0 && ((maxTopLeft.x < maxBottomLeft.x) || (maxBottomLeft.y < centerH+shift && euclideanDist(maxTopLeft, leftShoulder)>50) )) {
+	} else if (maxTopLeft.x!=0 && ((maxTopLeft.x < maxBottomLeft.x) || (maxBottomLeft.y < centerH+shift && euclideanDist(maxTopLeft, leftShoulder)>50) )) {
 		// O ponto mais alto
 		leftHand = maxTopLeft;
+		leftHandV[leftHandH++ % BUF_SIZE] = leftHand;
 	} else if (maxBottomLeft.x!=0) {
 		// O ponto mais baixo
 		leftHand = maxBottomLeft;
+		leftHandV[leftHandH++ % BUF_SIZE] = leftHand;
+	}
+	if (leftHand.x!=0) {
+		leftHandV[leftHandH++ % BUF_SIZE] = leftHand;
+		leftHand = calculaMedia(leftHandV);
 	}
 
-
-
+//printf("12:centerWs = %d %d %d (%d)\n", centerW, rightShoulder.x, leftShoulder.x, rightShoulder.x-leftShoulder.x);
 	// Right Elbow/Cotovelo
 	rightElbow.x=0;
 	// Analisando apenas o lado direito do corpo. Sera cotovelo se:
@@ -272,7 +314,6 @@ void Skeleton::locateMainBodyPoints(cv::Mat &frame) {
 	if (maxRight.x!=0 && ( (maxRight.x-rightHand.x > 5) && euclideanDist(maxRight, rightHand)>20  && !( abs(maxRight.x-maxTopRight.x) < 15 && abs(maxRight.x-maxBottomRight.x) < 30) &&
 		euclideanDist(maxRight, rightHand)>50)) {
 		rightElbow = maxRight;
-		//printf("\n\nelbow::case1\n");
 	}
 	// O ponto mais baixo estiver na linha da cintura (linha da cintura +- shift) E distante da mao E os Y's de maxBottom, maxRight e middleArm NAO estiverem proximos.
 	else if (maxBottomRight.x!=0 && ((maxBottomRight.y > centerH-shift*1.3 && maxBottomRight.y < centerH+shift) && euclideanDist(maxBottomRight, rightHand)>50 &&
@@ -299,35 +340,43 @@ void Skeleton::locateMainBodyPoints(cv::Mat &frame) {
 		rightElbow = Point((rightHand.x+rightShoulder.x)/2, (rightHand.y+rightShoulder.y)/2); // braco esticado
 		//printf("\n\nelbow::case5\n");
 	}
+	if (rightElbow.x!=0) {
+		rightElbowV[rightElbowH++ % BUF_SIZE] = rightElbow;
+		rightElbow = calculaMedia(rightElbowV);
+	}
 
 
 
 	// Left Elbow/Cotovelo
 	leftElbow.x=0;
 	// Analisando apenas o lado esquerdo do corpo. Sera cotovelo se:
-
+//printf("13:centerWs = %d %d %d (%d)\n", centerW, rightShoulder.x, leftShoulder.x, rightShoulder.x-leftShoulder.x);
 	// Mao esta mais a direita do que o cotovelo E o cotovelo nao pode estar proxima da mao E o x do Top, do Left e do Bottom nao estarem muito proximos E distante da mao
 	if (maxLeft.x!=0 && ( (leftHand.x-maxLeft.x > 5) && euclideanDist(maxLeft, leftHand)>20  && !( abs(maxLeft.x-maxTopLeft.x) < 15 && abs(maxLeft.x-maxBottomLeft.x) < 30) &&
 		euclideanDist(maxLeft, leftHand)>50)) {
 		leftElbow = maxLeft;
+		leftElbowV[leftElbowH++ % BUF_SIZE] = leftElbow;
 		//printf("\n\nelbow::case1\n");
 	}
 	// O ponto mais baixo estiver na linha da cintura (linha da cintura +- shift) E distante da mao E os Y's de maxBottom, maxLeft e middleArm NAO estiverem proximos.
 	else if (maxBottomLeft.x!=0 && ((maxBottomLeft.y > centerH-shift*1.3 && maxBottomLeft.y < centerH+shift) && euclideanDist(maxBottomLeft, leftHand)>50 &&
                !( abs(maxBottomLeft.y-maxLeft.y) < 20 && abs(maxBottomLeft.y-middleArmLeft.y) < 20) )) {
 		leftElbow = maxBottomLeft;
+		leftElbowV[leftElbowH++ % BUF_SIZE] = leftElbow;
 		//printf("\n\nelbow::case2\n");
 	}
 	// O y do mais baixo e do mais a esquerda e o do middleArm forem muito proximos. E o y do ombro longe (caso do braco todo esticado na linha do ombro). E distante da mao
 	else if (middleArmLeft.x!=0 && (abs(maxLeft.y-maxBottomLeft.y)<35 && abs(maxLeft.y-middleArmLeft.y)<35 && abs(leftShoulder.y-middleArmLeft.y)>30 &&
 		euclideanDist(middleArmLeft, leftHand)>50 )) {
 		leftElbow = middleArmLeft;
+		leftElbowV[leftElbowH++ % BUF_SIZE] = leftElbow;
 		//printf("\n\nelbow::case3\n");
 	}
 	// O x do mais baixo e do mais a esquerda e o do middleArm forem muito proximos.  E distante da mao
 	else if (middleArmLeft.x!=0 && (abs(maxLeft.x-maxBottomLeft.x)<35 && abs(maxLeft.x-middleArmLeft.x)<35 && /*abs(leftShoulder.y-middleArmLeft.y)>30 &&*/
 		euclideanDist(middleArmLeft, leftHand)>50 )) {
 		leftElbow = middleArmLeft;
+		leftElbowV[leftElbowH++ % BUF_SIZE] = leftElbow;
 		//printf("\n\nelbow::case4\n");
 	}
 	// A mao estiver abaixo do centro OU
@@ -335,21 +384,119 @@ void Skeleton::locateMainBodyPoints(cv::Mat &frame) {
 	else if ((leftHand.x!=0 && leftShoulder.x!=0) &&
 		((leftHand.y > centerH+shift) || (abs(leftShoulder.y-leftHand.y)<40 && abs(maxBottomLeft.y-leftHand.y)<30 && centerW-leftHand.x > afa28))) { 
 		leftElbow = Point((leftHand.x+leftShoulder.x)/2, (leftHand.y+leftShoulder.y)/2); // braco esticado
+		leftElbowV[leftElbowH++ % BUF_SIZE] = leftElbow;
 		//printf("\n\nelbow::case5\n");
+	}
+	if (leftElbow.x!=0) {
+		leftElbowV[leftElbowH++ % BUF_SIZE] = leftElbow;
+		leftElbow = calculaMedia(leftElbowV);
 	}
 
 
-
+/*
 	LineIterator it(frame, leftShoulder, leftElbow, 8);
 	for(int i = 0; i < it.count; i++, ++it)
 	{
 	    Point pt= it.pos(); 
 	    //Draw Some stuff using that Point pt
-	}
+	}*/
+//printf("2::centerWs = %d %d %d (%d)\n", centerW, rightShoulder.x, leftShoulder.x, rightShoulder.x-leftShoulder.x);
 }
 
 
+// TODO testar com a mediana
+cv::Point Skeleton::calculaMedia(cv::Point vector[]) {
+	Point m = Point(0,0);
+	int q=0;
+	for (int i=0 ; i<BUF_SIZE ; i++) {
+		if (vector[i].x!=0) {
+			m.x += vector[i].x;
+			m.y += vector[i].y;
+			q++;
+		}
+	}
+	if (q>0) {
+		m.x /= q;
+		m.y /= q;
+	}
+
+	return m;
+}
+
+
+/**
+ * Mediana
+ **/
+cv::Point Skeleton::calculaMedia2(cv::Point vector[]) {
+	int q1=0, q2=0;
+	Point m = Point(0,0);
+
+	// serpara o vetor de pontos em 2 vetores
+	int v1[BUF_SIZE], v2[BUF_SIZE];
+	for (int i=0 ; i<BUF_SIZE ; i++) {
+		v1[i] = vector[i].x;
+		v2[i] = vector[i].y;
+	}
+
+	quick_sort(v1, 0, BUF_SIZE);
+	quick_sort(v2, 0, BUF_SIZE);
+
+	for (int i=0 ; i<BUF_SIZE ; i++) {
+		if (v1[i]!=0)
+			q1++;
+		if (v2[i]!=0)
+			q2++;
+	}
+	if (q1>0)
+		m.x = v1[q1/2+BUF_SIZE-q1];
+	if (q2>0)
+		m.y = v2[q2/2+BUF_SIZE-q2];
+
+	return m;
+}
+
+
+int Skeleton::calculaMedia(int vector[]) {
+	int m = 1;
+	int q=0;
+	for (int i=0 ; i<BUF_SIZE ; i++) {
+		if (vector[i]!=0) {
+			m += vector[i];
+			q++;
+		}
+	}
+	if (q>0)
+		m /= q;
+
+	return m;
+}
+
+
+/**
+ * Mediana
+ **/
+int Skeleton::calculaMedia2(int vector[]) {
+	int m = 1;
+	int q=0;
+
+	quick_sort(vector, 0, BUF_SIZE);
+
+	for (int i=0 ; i<BUF_SIZE ; i++) {
+		if (vector[i]!=0) {
+			q++;
+		}
+	}
+	if (q>0)
+		return vector[q/2+BUF_SIZE-q];
+
+	return m;
+}
+
 void Skeleton::drawMarkers(Mat &frame) {
+	static int draws = 0;
+	draws++;
+//printf("3::centerWs = %d %d %d (%d)\n", centerW, rightShoulder.x, leftShoulder.x, rightShoulder.x-leftShoulder.x);
+#ifdef DEBUG
 	if (maxRight.x!=0)
 		circle( frame, maxRight,        7, Scalar(255,255,0), 2, 8, 0 );
 	if (maxLeft.x != 0)
@@ -370,49 +517,54 @@ void Skeleton::drawMarkers(Mat &frame) {
 		circle( frame, middleArmRight,  7, Scalar(255,255,255), 2, 8, 0 );
 	if (middleArmLeft.x != 0)
 		circle( frame, middleArmLeft,   7, Scalar(255,255,255), 2, 8, 0 );
+#endif
 
 //return;
+
 	// Desenha os quadrantes (linhas)
 	Point ini = Point(centerW, 1);	
 	Point fim = Point(centerW, height-1);
 	Scalar c = Scalar(0,255,255);
-	line(frame, ini, fim, c, 1, 8, 0 );
+	line(frame, ini, fim, c, 1, 8, 0 ); // linha vertical central
 	ini.x -= afa*subSample; fim.x -= afa*subSample;
-	line(frame, ini, fim, c, 1, 8, 0 );
+	line(frame, ini, fim, c, 1, 8, 0 ); // linha vertical esquerda
 	ini.x += afa*subSample*2; fim.x += afa*subSample*2;
-	line(frame, ini, fim, c, 1, 8, 0 );
+	line(frame, ini, fim, c, 1, 8, 0 ); // linha vertical direita
 
 	ini = Point(1      , centerH);
 	fim = Point(width-1, centerH);
-	line(frame, ini, fim, c, 1, 8, 0 );
+	line(frame, ini, fim, c, 1, 8, 0 ); // linha horizontal central
 
-	// Cabeca
-	circle( frame, head,           30, Scalar(255,255,255), 2, 8, 0 );
+	// Cabeca/Head
+	circle( frame, head,           20, Scalar(255,255,0), 2, 8, 0 );
 
-	// Ombros
-	circle( frame, rightShoulder,  30, Scalar(255,255,255), 2, 8, 0 );
-	circle( frame, leftShoulder,   30, Scalar(255,255,255), 2, 8, 0 );
+	// Maos/Hands
+	if (leftHand.x != 0)
+		circle( frame, leftHand, 20, Scalar(255,0,255), 2, 8, 0 );
+	if (rightHand.x != 0)
+		circle( frame, rightHand, 20, Scalar(255,0,255), 2, 8, 0 );
+
+	// Ombros/Shoulders
+	circle( frame, rightShoulder,  20, Scalar(255,255,255), 2, 8, 0 );
+	circle( frame, leftShoulder,   20, Scalar(255,255,255), 2, 8, 0 );
+//printf("4::centerWs = %d %d %d (%d)\n\n", centerW, rightShoulder.x, leftShoulder.x, rightShoulder.x-leftShoulder.x);
 	c = Scalar(255,255,255);
-	line(frame, leftShoulder, rightShoulder, c, 2, 8, 0 );
+	line(frame, leftShoulder, rightShoulder, c, 2, 8, 0 ); // linha entre os ombros
 	fim = Point((rightShoulder.x+leftShoulder.x)/2, abs(rightShoulder.y+leftShoulder.y)/2);
-	line(frame, maxTopCenter, fim, c, 2, 8, 0 );
+	line(frame, head, fim, c, 2, 8, 0 ); // linha da cabeca e o centro dos ombros
 
-	// linha base
+	// linha/line base
 	ini = fim;
 	fim = Point(ini.x, maxBottomCenter.y);
-	line(frame, ini, fim, c, 2, 8, 0 );
+	line(frame, ini, fim, c, 2, 8, 0 ); // linha central do corpo do esqueleto. Entre o meio dos ombros e a parte de baixo.
 
 
-	// Maos
-	if (leftHand.x != 0)
-		circle( frame, leftHand, 30, Scalar(255,0,255), 2, 8, 0 );
-	if (rightHand.x != 0)
-		circle( frame, rightHand, 30, Scalar(255,0,255), 2, 8, 0 );
 
 
-	// Cotovelos
+
+	// Cotovelos/Elbows
 	if (rightElbow.x != 0) {
-		circle( frame, rightElbow, 30, Scalar(0,0,255), 2, 8, 0 );
+		circle( frame, rightElbow, 20, Scalar(0,0,255), 2, 8, 0 );
 		if (rightShoulder.x!=0 && rightElbow.x!=0)
 			line(frame, rightShoulder, rightElbow, c, 2, 8, 0 );
 		if (rightHand.x!=0)
@@ -421,7 +573,7 @@ void Skeleton::drawMarkers(Mat &frame) {
 		line(frame, rightShoulder, rightHand, c, 2, 8, 0 );
 	}
 	if (leftElbow.x != 0) {
-		circle( frame, leftElbow, 30, Scalar(0,0,255), 2, 8, 0 );
+		circle( frame, leftElbow, 20, Scalar(0,0,255), 2, 8, 0 );
 		if (leftShoulder.x!=0 && leftElbow.x!=0)
 			line(frame, leftShoulder, leftElbow, c, 2, 8, 0 );
 		if (leftHand.x!=0)
@@ -432,7 +584,11 @@ void Skeleton::drawMarkers(Mat &frame) {
 }
 
 
-
+/**
+ * Desenha os pontos==255 de uma matriz (skelImg) sobre outra matriz (frame).
+ * @param skelImg Matriz cujos de pontos serao desenhados em frame
+ * @param frame Matriz onde os pontos serao desenhados.
+ **/
 void Skeleton::drawOverFrame(Mat * skelImg, Mat &frame) {
 	Scalar cor = Scalar(0,255,0);
 	int w = skelImg->cols;
@@ -456,7 +612,11 @@ void Skeleton::drawOverFrame(Mat * skelImg, Mat &frame) {
 	}
 }
 
-
+/**
+ * Desenha o vetor de pontos sobre a matriz (frame).
+ * @param pontos vetor com os pontos que serao desenhados em frame
+ * @param frame Matriz onde os pontos serao desenhados.
+ **/
 void Skeleton::drawOverFrame(std::vector<cv::Point> pontos, Mat &frame) {
 	Scalar cor = Scalar(0,255,255);
 	Point p;
@@ -467,7 +627,11 @@ void Skeleton::drawOverFrame(std::vector<cv::Point> pontos, Mat &frame) {
 	}
 }
 
-
+/**
+ * Detecta a maior regiao continua da imagem por "region growing". As demais regioes sao apagadas.
+ *
+ * @param frame Matriz onde a regiao sera localizada.
+ **/
 void Skeleton::detectBiggerRegion(Mat &frame) {
 	int x,y;
 	int xM, yM, maior=0;
@@ -505,6 +669,11 @@ void Skeleton::detectBiggerRegion(Mat &frame) {
 
 
 
+/**
+ * Limpa a imagem removendo regioes pequenas.
+ * 
+ * @param frame imagem a ser limpa.
+ **/
 void Skeleton::removeSmallsRegions(Mat * frame) {
 	int x,y;
 	int size;
@@ -528,6 +697,11 @@ void Skeleton::removeSmallsRegions(Mat * frame) {
 }
 
 
+/**
+ * Calcula a media entre os pixels==255 da matriz
+ * 
+ * @return O ponto que tem os valores da medias x e y.
+ **/
 cv::Point Skeleton::mediaPoint(Mat * frame) {
 	int w = frame->cols;
 	int h = frame->rows;
@@ -553,41 +727,11 @@ cv::Point Skeleton::mediaPoint(Mat * frame) {
 
 
 // so entra aqui se o ponto mais a direita e o mais baixo tiverem o y proximos, Ou o mais a esquerda e o mais baixo.
-std::vector<cv::Point> Skeleton::detectaRetas(Mat * skeleton, bool right) {
-	int w = skeleton->cols;
-	int h = skeleton->rows;
-	int x, y;
-	Point media = Point(0, 0);
-	int c=1;
-	std::vector<cv::Point> retas;
-
-	int ini = 0, fim = w/2+afa;
-	if (right) {
-		ini = w/2+afa;
-		fim = w;
-	}
-
-	for (y=0 ; y<h ; y++) {
-
-		for (x=ini ; x<fim ; x++) {
-			if (skeleton->data[y*w+x]==255) {
-				media.x += x;
-				media.y += y;
-				c++;
-			}
-		}
-	}
-	if (c>1) c--;
-	media.x /= c;
-	media.y /= c;
-
-	return retas;
-}
-
 
 /**
  * Localiza um possivel ponto do cotovelo a partir dos pontos do braco
- *
+ * @param arm braco do esquelto
+ * @return o ponto na curva do esquelto do braco
  **/
 cv::Point * Skeleton::getElbowHard(std::vector<cv::Point> &arm) {
 	cv::Point * p = NULL;
@@ -608,10 +752,7 @@ cv::Point * Skeleton::getElbowHard(std::vector<cv::Point> &arm) {
 				p = new Point(arm[i].x*subSample, arm[i].y*subSample);
 				break;
 			}
-			/*else if (ang1==ang2 && ang2==ang3 && ang1==270 && i>5) {
-				p = new Point(arm[i].x*subSample, arm[i].y*subSample);
-				break;
-			}*/
+
 			// guarda os 3 ultimos angulos
 			ang3 = ang2;
 			ang2 = ang1;
@@ -627,6 +768,10 @@ cv::Point * Skeleton::getElbowHard(std::vector<cv::Point> &arm) {
 /**
  * Localiza os pontos do esqueleto do braco direito ou esquerdo.
  *
+ * @param skeleton matriz de ponstos com o esqueleto
+ * @param right se verdadeiro busca pelo braco direito, falso pelo esquerdo.
+ *
+ * @return vetor de cv::Point com os pontos do braco
  **/
 std::vector<cv::Point> Skeleton::getSkeletonArm(Mat * skeleton, bool right) {
 	int w = skeleton->cols;
@@ -740,10 +885,13 @@ std::vector<cv::Point> Skeleton::getSkeletonArm(Mat * skeleton, bool right) {
 
 	cv::Point * el = getElbowHard(pontos_ordered_smoth);
 	if (el) {
-		if (right)
+		if (right) {
 			middleArmRight = *el;
-		else
+
+		} else {
 			middleArmLeft = *el;
+
+		}
 		delete el;
 	}
 
@@ -810,6 +958,12 @@ cv::Mat * Skeleton::thinning(cv::Mat &binarized) {
 	Point media = mediaPoint(skeleton);
 	centerW = media.x * subSample;
 	centerH = media.y * subSample;
+
+	centerWV[centerWHead++ % BUF_SIZE] = centerW;
+	centerHV[centerHHead++ % BUF_SIZE] = centerH;
+
+	//this->centerW = calculaMedia(centerWV);
+	//this->centerH = calculaMedia(centerHV);
 
 	return skeleton;
 }

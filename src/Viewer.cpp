@@ -48,7 +48,8 @@ SampleViewer::~SampleViewer()
 {
 	finalize();
 
-	delete[] m_pTexMap;
+	if (m_pTexMap)
+		delete[] m_pTexMap;
 
 	ms_self = NULL;
 
@@ -107,7 +108,7 @@ printf("Compilado SEM Depth\n");
 	while (1) {
 		display();
 		//char c = (char)waitKey(10);
-		char c = (char)waitKey(500);
+		char c = (char)waitKey(10);
 	        if( c == 27 || c == 'q' || c == 'Q' )
         	        break;
 	}
@@ -220,16 +221,8 @@ void SampleViewer::display()
 		//Mat binarizedFirst(cv::Size(m_nTexMapX/subSample, m_nTexMapY/subSample), CV_8UC1, cv::Scalar(0));
 		//cv::resize(frame, binarizedFirst, binarizedFirst.size());
 		//Canny(binarizedFirst, binarized2, 50, 200, 3);
-
 		//Canny(binarized, binarized2, 50, 200, 3);
 
-		/*std::vector<Vec4i> lines;
-		HoughLinesP(binarized, lines, 1, CV_PI/90, 100, 50, 10);
-printf("lines.size=%d\n", (int)lines.size());
-		for (size_t ii=0; ii< lines.size() ; ii++) {
-			Vec4i l = lines[ii];
-			line(frame, Point(l[0]*subSample, l[1]*subSample), Point(l[2]*subSample, l[3]*subSample), Scalar(0, 0, 255), 3, CV_AA);
-		}*/
 
 		Mat * skeleton = skel->thinning(binarized);
 		skel->removeSmallsRegions(skeleton);
@@ -240,21 +233,20 @@ printf("lines.size=%d\n", (int)lines.size());
 
 		skel->locateMainBodyPoints(binarizedCp);
 
-		//skel->drawOverFrame(&binarized2, &frame);
-		skel->drawOverFrame(skeleton, frame);
-		skel->drawOverFrame(bdireito, frame);
-		skel->drawOverFrame(besquerdo, frame);
+		//skel->drawOverFrame(skeleton, frame);
+		//skel->drawOverFrame(bdireito, frame);
+		//skel->drawOverFrame(besquerdo, frame);
 
 		skel->drawMarkers(frame);
+
+		if (skeleton)
+			delete skeleton;
 #ifndef DEPTH
 		}
 #endif
 		//imshow("Skeleton Traker", *skeleton);
 		imshow("Skeleton Traker", frame );
 		//imshow("Skeleton Traker", binarized2 );
-//printf("aqui 6\n");
-		if (skeleton)
-			delete skeleton;
 	}
 
 }
