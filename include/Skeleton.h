@@ -4,6 +4,8 @@
 #include <opencv2/highgui.hpp>
 #include <vector>
 
+#include "Tiago.h"
+
 #define BUF_SIZE 5
 
 class Skeleton {
@@ -44,6 +46,8 @@ class Skeleton {
 	float afa28;
 	int shift;
 
+	Tiago * tiago;
+
     protected:
 	void initialize();
 	void zeraMaximus();
@@ -60,6 +64,7 @@ class Skeleton {
 	cv::Point calculaMedia2(cv::Point vector[]);
     public:
 	Skeleton(int width, int height, int subSample);
+	virtual ~Skeleton();
 	void locateMaximus(cv::Mat *frame);
 	void locateMainBodyPoints(cv::Mat &frame);
 	void drawMarkers(cv::Mat &frame);

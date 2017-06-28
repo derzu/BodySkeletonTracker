@@ -22,8 +22,8 @@ CFLAGS += -DDEPTH
 EXE_NAME = BodySkeletonTracker
 
 #opencv
-CFLAGS += $(shell pkg-config --cflags opencv) -g
-LDFLAGS += $(shell pkg-config --libs --static opencv) -g
+CFLAGS += $(shell pkg-config --cflags opencv) -g -std=c++11 -pthread 
+LDFLAGS += $(shell pkg-config --libs --static opencv)
 
 ifndef OPENNI2_INCLUDE
     $(error OPENNI2_INCLUDE is not defined. Please define it or 'source' the OpenNIDevEnvironment file from the installation)

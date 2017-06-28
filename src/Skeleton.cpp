@@ -47,6 +47,14 @@ void Skeleton::initialize() {
 	leftHandH  = leftElbowH  = leftShoulderH = 0;
 	headH = 0;
 	centerWHead = centerHHead = 0;
+
+	tiago = new Tiago();
+}
+
+
+Skeleton::~Skeleton() {
+	if (tiago)
+		delete tiago;
 }
 
 
@@ -994,20 +1002,26 @@ void Skeleton::detectTiagoCommands() {
 
 
 		// so entra a cada 10c para nao poluir muito o terminal	
-		if (c%10==0) {
+		//if (c%10==0)
+		{
+			float angShoulder, angElbow;
 			// Angulo entre ombro e cotovelo
 			if (rightHand.x!=0 && rightElbow.x!=0) {
-				float ang = -atan2f(rightElbow.y-rightShoulder.y, rightElbow.x-rightShoulder.x)*180/CV_PI;
-				ang = (((int)ang)/5)*5;
-				printf("ANG::COTOVELO::OMBRO::%.1f\n", ang);
+				angShoulder = -atan2f(rightElbow.y-rightShoulder.y, rightElbow.x-rightShoulder.x)*180/CV_PI;
+				angShoulder = (((int)angShoulder)/5)*5;
+				tiago->setAngShoulder(angShoulder);
+				//printf("ANG::COTOVELO::OMBRO::%.1f\n", angShoulder);
 			}
 
 			// Angulo entre antebraco e cotovelo
 			if (rightHand.x!=0 && rightElbow.x!=0) {
-				float ang = -atan2f(rightHand.y-rightElbow.y, rightHand.x-rightElbow.x)*180/CV_PI;
-				ang = (((int)ang)/5)*5;
-				printf("ANG::COTOVELO:: MAO ::%.1f\n\n", ang);
+				angElbow = -atan2f(rightHand.y-rightElbow.y, rightHand.x-rightElbow.x)*180/CV_PI;
+				angElbow = (((int)angElbow)/5)*5;
+				tiago->setAngElbow(angElbow);
+				//printf("ANG::COTOVELO:: MAO ::%.1f\n\n", angElbow);
 			}
+
+			tiago->moveArmThread();
 		}
 
 	}
