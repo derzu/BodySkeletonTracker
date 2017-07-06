@@ -81,10 +81,4 @@ void SkeletonPoints::computePoint(int type) {
 	*(bodyPoints[type]) = getMediaVector(type);
 }
 
-int SkeletonPoints::getCenterY() {
-	//return bodyPoints[HEAD]->y + 150;
-	return (head.y - (rightShoulder.y+leftShoulder.y)/2)*2;
-}
-
-
 

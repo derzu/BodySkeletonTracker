@@ -33,6 +33,9 @@ class Skeleton {
 	float afa28;
 	int shift;
 
+	bool showSkeleton;
+
+	// Pal-robotics Tiago
 	Tiago * tiago;
 
     protected:
@@ -61,7 +64,6 @@ class Skeleton {
 	cv::Mat * thinning(cv::Mat &binarized);
 	void detectBiggerRegion(cv::Mat &frame);
 	std::vector<cv::Point> getSkeletonArm(cv::Mat * skeleton, bool right);
-	//void detectTiagoCommands(SkeletonPoints * s);
 	SkeletonPoints* getSkeletonPoints();
 	void analyse(cv::Mat * skeleton);
 };

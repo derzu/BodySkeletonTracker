@@ -102,17 +102,20 @@ void * Tiago::moveArm(void * t) {
 void Tiago::detectTiagoCommands(SkeletonPoints* sp, int afa) {
 	static int c=0;
 	c++;
-
+return;
 	// mao esquerda esticada e afastada do corpo, comandos ativados.
-	if (sp->leftHand.x!=0 && sp->leftHand.x < sp->head.x - afa*2 && sp->leftHand.y > sp->getCenterY()+afa)
+	if (sp->leftHand.x!=0 && sp->leftHand.x < sp->center.x - afa*2 && sp->leftHand.y > sp->center.y + afa)
 	{
 		// Tronco
-		int y1 = sp->head.y;
-		int y2 = sp->pointsV[SkeletonPoints::HEAD][sp->vHead[SkeletonPoints::HEAD] % BUF_SIZE].y;
+		// media dos dois ombros atual
+		int y1 = (sp->rightShoulder.y + sp->leftShoulder.y)/2; 
+		// ultima media dos dois ombros armazenada
+		int y2 = (sp->pointsV[SkeletonPoints::RIGHT_SHOULDER][sp->vHead[SkeletonPoints::RIGHT_SHOULDER] % BUF_SIZE].y + 
+			  sp->pointsV[SkeletonPoints::LEFT_SHOULDER][sp->vHead[SkeletonPoints::LEFT_SHOULDER] % BUF_SIZE].y)/2;
 		//printf("%d::Recebendo comandos (%d - %d)=%d\n", c++, y1, y2, y1 - y2);
-		if (y1 - y2 > 20)
+		if (y1 - y2 >= 18)
 			printf("%d::TRONCO para BAIXO\n", c);
-		if (y1 - y2 < -20)
+		if (y1 - y2 <= -18)
 			printf("%d::TRONCO para CIMA\n", c);
 
 
@@ -130,7 +133,7 @@ void Tiago::detectTiagoCommands(SkeletonPoints* sp, int afa) {
 			float angShoulder, angElbow;
 			// Angulo entre ombro e cotovelo
 			if (sp->rightHand.x!=0 && sp->rightElbow.x!=0) {
-				angShoulder = -atan2f(sp->rightElbow.y-sp->rightShoulder.y, sp->rightElbow.x-sp->rightShoulder.x)*180/CV_PI;
+				angShoulder = -atan2f(sp->rightElbow.y-sp->rightShoulder.y, sp->rightElbow.x-sp->rightShoulder.x)*180./CV_PI;
 				angShoulder = (((int)angShoulder)/5)*5;
 				setAngShoulder(angShoulder);
 				//printf("ANG::COTOVELO::OMBRO::%.1f\n", angShoulder);
@@ -138,7 +141,7 @@ void Tiago::detectTiagoCommands(SkeletonPoints* sp, int afa) {
 
 			// Angulo entre antebraco e cotovelo
 			if (sp->rightHand.x!=0 && sp->rightElbow.x!=0) {
-				angElbow = -atan2f(sp->rightHand.y-sp->rightElbow.y, sp->rightHand.x-sp->rightElbow.x)*180/CV_PI;
+				angElbow = -atan2f(sp->rightHand.y-sp->rightElbow.y, sp->rightHand.x-sp->rightElbow.x)*180./CV_PI;
 				angElbow = (((int)angElbow)/5)*5;
 				setAngElbow(angElbow);
 				//printf("ANG::COTOVELO:: MAO ::%.1f\n\n", angElbow);
@@ -153,7 +156,7 @@ void Tiago::detectTiagoCommands(SkeletonPoints* sp, int afa) {
 	// so entra a cada 10c para nao poluir muito o terminal	
 	if (c%10==0)
 		// se a mao esquerda estiver mais a esquerda do que o ombro, e ambos estiverem acima da linha da cintura
-		if (sp->leftHand.x!=0 && sp->leftElbow.x!=0 && sp->leftHand.y < sp->getCenterY()-afa && sp->leftElbow.y < sp->getCenterY() )
+		if (sp->leftHand.x!=0 && sp->leftElbow.x!=0 && sp->leftHand.y < sp->center.y-afa && sp->leftElbow.y < sp->center.y )
 		{
 			if (sp->leftHand.x - sp->leftElbow.x < -25)
 				printf("andar para frente\n");

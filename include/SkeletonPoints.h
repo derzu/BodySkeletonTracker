@@ -12,7 +12,6 @@ class SkeletonPoints {
 		SkeletonPoints();
 		SkeletonPoints(cv::Point rightHand, cv::Point rightElbow, cv::Point rightShoulder, cv::Point leftHand, cv::Point leftElbow, cv::Point leftShoulder, cv::Point head);
 		void computePoint(int type);
-		int getCenterY();
 
 		// Main body points
 		cv::Point rightHand, rightElbow, rightShoulder;

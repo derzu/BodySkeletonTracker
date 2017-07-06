@@ -232,8 +232,8 @@ void SampleViewer::display()
 
 		skel->locateMainBodyPoints(binarizedCp);
 
-		skel->drawOverFrame(skeleton, frame);
-		//skel->drawOverFrame(bdireito, frame);
+		//skel->drawOverFrame(skeleton, frame);
+		skel->drawOverFrame(bdireito, frame);
 		//skel->drawOverFrame(besquerdo, frame);
 
 		skel->drawMarkers(frame);

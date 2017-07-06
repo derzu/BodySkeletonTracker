@@ -1,6 +1,5 @@
 #include "SkeletonDepth.h"
 #include <stdio.h>
-#include <GL/freeglut.h>
 #include <opencv2/imgproc.hpp>
 
 #include "OniSampleUtilities.h"

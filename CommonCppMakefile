@@ -147,4 +147,4 @@ clean-defs:
 clean-temp:
 	rm *~ src/*~ include/*~
 
-clean: clean-objs clean-defs
+clean: clean-objs clean-defs clean-temp

@@ -1,13 +1,12 @@
 #include "Skeleton.h"
 #include <stdio.h>
-#include <GL/freeglut.h>
 #include <opencv2/imgproc.hpp>
 #include <strings.h>
 #include <list>
 
 #include "AuxFuncs.h"
 
-//#define DEBUG
+#define DEBUG
 
 using namespace cv;
 
@@ -31,6 +30,8 @@ void Skeleton::initialize() {
 	afa = 70/subSample;
 	shift = 50;
 	afa28 = afa*subSample*2.8;
+
+	showSkeleton = false;
 
 	sp = new SkeletonPoints();
 	tiago = new Tiago();
@@ -166,6 +167,11 @@ void Skeleton::locateShoulders(cv::Mat &frame) {
 			if (!nAchou1) break;
 		}
 	}
+
+	if (nAchou1 && nAchou2)
+		showSkeleton = false;
+	else
+		showSkeleton = true;
 
 //printf("0::centerWs = %d %d %d (%d)\n", centerWs, rightShoulder.x, leftShoulder.x, rightShoulder.x-leftShoulder.x);
 }
@@ -456,6 +462,10 @@ int Skeleton::calculaMediana(int vector[]) {
 
 void Skeleton::drawMarkers(Mat &frame) {
 	static int draws = 0;
+
+	if (!showSkeleton)
+		return;
+
 	draws++;
 
 #ifdef DEBUG
@@ -476,10 +486,11 @@ void Skeleton::drawMarkers(Mat &frame) {
 	if (maxBottomLeft.x != 0)
 		circle( frame, maxBottomLeft,   7, Scalar(255,0,0),   2, 8, 0 );
 	if (middleArmRight.x != 0)
-		circle( frame, middleArmRight,  7, Scalar(255,255,255), 2, 8, 0 );
+		circle( frame, middleArmRight,  15, Scalar(255,255,255), 2, 8, 0 );
 	if (middleArmLeft.x != 0)
-		circle( frame, middleArmLeft,   7, Scalar(255,255,255), 2, 8, 0 );
+		circle( frame, middleArmLeft,   15, Scalar(255,255,255), 2, 8, 0 );
 #endif
+
 
 //return;
 
@@ -499,6 +510,9 @@ void Skeleton::drawMarkers(Mat &frame) {
 
 	// Cabeca/Head
 	circle( frame, sp->head,           20, Scalar(255,255,0), 2, 8, 0 );
+
+	// Center
+	//circle( frame, sp->center,         20, Scalar(255,255,0), 2, 8, 0 );
 
 	// Maos/Hands
 	if (sp->leftHand.x != 0)
@@ -722,15 +736,23 @@ cv::Point * Skeleton::getElbowHard(std::vector<cv::Point> &arm) {
 	for (int i=0; i<(int)arm.size()-1 ; i++) {
 		//printf("%dx%d - %dx%d\n", arm[i].x, arm[i].y, arm[i+1].x, arm[i+1].y);
 		if (euclideanDist(arm[i], arm[i+1])<5) {
-			//ang1 = atan2(abs(arm[i].y-arm[i+1].y), abs(arm[i].x-arm[i+1].x) ) * 180./CV_PI;
-			ang1 = atan2(abs(arm[i].y-arm[i+1].y), abs(arm[i].x-arm[i+1].x) ) * 180.;
-			if (ang1>250 && ang1<290)
-				ang1 = 270;
+			ang1 = atan2((arm[i].y-arm[i+1].y), (arm[i].x-arm[i+1].x) ) * 180./CV_PI;
+			//ang1 = atan2(abs(arm[i].y-arm[i+1].y), abs(arm[i].x-arm[i+1].x) ) * 180.;
+			if (ang1>-110 && ang1<-70)
+				ang1 = -90;
+			if (ang1>70 && ang1<110)
+				ang1 = 90;
+			if (ang1>-20 && ang1<20)
+				ang1 = 0;
+			if (ang1>160 || ang1<-160)
+				ang1 = 180;
 			diff = abs(ang1-ang2);
 			
+			// localiza uma sequencia de 3 ponstos iguais, esses pontos provavelmente estarao apos a curva do cotovelo.
+
 			//printf("ang: %6.2lf(%6.2lf)\n", ang1, diff);
 			// localiza o ponto no meio da curva
-			if (ang1==ang2 && ang2==ang3 && (ang1==0 || ang1==270) && i>5) {
+			if (ang1==ang2 && ang2==ang3 && (ang1==0 || ang1==-90 || ang1==90 || ang1==180) && i>5) {
 				p = new Point(arm[i].x*subSample, arm[i].y*subSample);
 				break;
 			}
@@ -741,7 +763,7 @@ cv::Point * Skeleton::getElbowHard(std::vector<cv::Point> &arm) {
 		}
 	
 	}
-	//printf("\n\n\n\n");
+	//printf("\n\n");
 
 	return p;
 }
@@ -864,7 +886,7 @@ std::vector<cv::Point> Skeleton::getSkeletonArm(Mat * skeleton, bool right) {
 		pontos_ordered_smoth.push_back(m);
 	}
 
-
+if (right) {
 	cv::Point * el = getElbowHard(pontos_ordered_smoth);
 	if (el) {
 		if (right) {
@@ -876,6 +898,7 @@ std::vector<cv::Point> Skeleton::getSkeletonArm(Mat * skeleton, bool right) {
 		}
 		delete el;
 	}
+}
 
 	return pontos_ordered_smoth;
 }
@@ -939,68 +962,6 @@ cv::Mat * Skeleton::thinning(cv::Mat &binarized) {
 
 	return skeleton;
 }
-
-
-/*
-void Skeleton::detectTiagoCommands(SkeletonPoints* sp) {
-	static int c=0;
-	c++;
-
-	// mao esquerda esticada e afastada do corpo, comandos ativados.
-	if (sp->leftHand.x!=0 && sp->leftHand.x < centerW-afa*subSample*2 && sp->leftHand.y>centerH+afa*subSample)
-	{
-		// Tronco
-		int centerHHead_1 = centerHHead-1 >= 0 ? centerHHead-1 : BUF_SIZE-1;
-		
-		int y1 = centerHV[centerHHead_1 % BUF_SIZE];
-		int y2 = centerHV[centerHHead   % BUF_SIZE];
-		//printf("%d::Recebendo comandos (%d - %d)=%d\n", c++, y1, y2, y1 - y2);
-		if (y1 - y2 > 20)
-			printf("%d::TRONCO para BAIXO\n", c);
-		if (y1 - y2 < -20)
-			printf("%d::TRONCO para CIMA\n", c);
-
-
-
-		// so entra a cada 10c para nao poluir muito o terminal	
-		//if (c%10==0)
-		{
-			float angShoulder, angElbow;
-			// Angulo entre ombro e cotovelo
-			if (sp->rightHand.x!=0 && sp->rightElbow.x!=0) {
-				angShoulder = -atan2f(sp->rightElbow.y-sp->rightShoulder.y, sp->rightElbow.x-sp->rightShoulder.x)*180/CV_PI;
-				angShoulder = (((int)angShoulder)/5)*5;
-				tiago->setAngShoulder(angShoulder);
-				//printf("ANG::COTOVELO::OMBRO::%.1f\n", angShoulder);
-			}
-
-			// Angulo entre antebraco e cotovelo
-			if (sp->rightHand.x!=0 && sp->rightElbow.x!=0) {
-				angElbow = -atan2f(sp->rightHand.y-sp->rightElbow.y, sp->rightHand.x-sp->rightElbow.x)*180/CV_PI;
-				angElbow = (((int)angElbow)/5)*5;
-				tiago->setAngElbow(angElbow);
-				//printf("ANG::COTOVELO:: MAO ::%.1f\n\n", angElbow);
-			}
-
-			// TODO descomentar
-			//tiago->moveArmThread();
-		}
-
-	}
-
-	// so entra a cada 10c para nao poluir muito o terminal	
-	if (c%10==0)
-		// se a mao esquerda estiver mais a esquerda do que o ombro, e ambos estiverem acima da linha da cintura
-		if (sp->leftHand.x!=0 && sp->leftElbow.x!=0 && sp->leftHand.y < centerH-afa && sp->leftElbow.y < centerH)
-		{
-			if (sp->leftHand.x - sp->leftElbow.x < -25)
-				printf("andar para frente\n");
-			else if (sp->leftHand.x - sp->leftElbow.x > 20)
-				printf("andar para tras\n");
-		}
-}
-*/
-
 
 
 
