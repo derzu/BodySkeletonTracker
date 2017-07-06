@@ -4,7 +4,7 @@
 #include <opencv2/highgui.hpp>
 
 #define BUF_SIZE 5
-#define MAX_BODY_POINTS 7
+#define MAX_BODY_POINTS 8
 
 class SkeletonPoints {
 
@@ -18,6 +18,7 @@ class SkeletonPoints {
 		cv::Point rightHand, rightElbow, rightShoulder;
 		cv::Point leftHand,  leftElbow,  leftShoulder;
 		cv::Point head;
+		cv::Point center;
 
 		// pointer to the main body points
 		cv::Point * bodyPoints[MAX_BODY_POINTS];
@@ -30,6 +31,7 @@ class SkeletonPoints {
     		static const int LEFT_HAND     = 4;
     		static const int LEFT_ELBOW    = 5;
     		static const int LEFT_SHOULDER = 6;
+		static const int CENTER        = 7;
 
 
 		// Main body points vectors (history)

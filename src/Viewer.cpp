@@ -232,7 +232,7 @@ void SampleViewer::display()
 
 		skel->locateMainBodyPoints(binarizedCp);
 
-		//skel->drawOverFrame(skeleton, frame);
+		skel->drawOverFrame(skeleton, frame);
 		//skel->drawOverFrame(bdireito, frame);
 		//skel->drawOverFrame(besquerdo, frame);
 

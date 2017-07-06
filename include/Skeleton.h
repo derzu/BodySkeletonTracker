@@ -16,9 +16,6 @@ class Skeleton {
 
 	int wC; // w clear
 	int hC; // w clear
-	int centerW, centerH;
-	int centerWV[BUF_SIZE], centerHV[BUF_SIZE];
-	int centerWHead, centerHHead;
 	cv::Point right, left, topCenter, topRight, topLeft, bottomCenter, bottomRight, bottomLeft;
 
 	// Main interest points
@@ -49,8 +46,8 @@ class Skeleton {
 	cv::Point * getElbowHard(std::vector<cv::Point> &armPoints);
 	cv::Point mediaPoint(cv::Mat * frame);
 	int calculaMedia(int vector[]);
-	int calculaMedia2(int vector[]);
-	cv::Point calculaMedia2(cv::Point vector[]);
+	int calculaMediana(int vector[]);
+	cv::Point calculaMediana(cv::Point vector[]);
 	void removeSmallsRegions(cv::Mat * frame);
 	void locateMaximus(cv::Mat *frame);
 

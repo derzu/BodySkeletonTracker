@@ -104,13 +104,11 @@ void Tiago::detectTiagoCommands(SkeletonPoints* sp, int afa) {
 	c++;
 
 	// mao esquerda esticada e afastada do corpo, comandos ativados.
-	if (sp->leftHand.x!=0 && sp->leftHand.x < sp->bodyPoints[SkeletonPoints::HEAD]->x - afa*2 && sp->leftHand.y > sp->getCenterY()+afa)
+	if (sp->leftHand.x!=0 && sp->leftHand.x < sp->head.x - afa*2 && sp->leftHand.y > sp->getCenterY()+afa)
 	{
 		// Tronco
-		int head_1 = sp->vHead[SkeletonPoints::HEAD] -1 >= 0 ? sp->vHead[SkeletonPoints::HEAD]-1 : BUF_SIZE-1;
-		
-		int y1 = sp->pointsV[SkeletonPoints::HEAD][ head_1    % BUF_SIZE].y;
-		int y2 = sp->pointsV[SkeletonPoints::HEAD][(head_1+1) % BUF_SIZE].y;
+		int y1 = sp->head.y;
+		int y2 = sp->pointsV[SkeletonPoints::HEAD][sp->vHead[SkeletonPoints::HEAD] % BUF_SIZE].y;
 		//printf("%d::Recebendo comandos (%d - %d)=%d\n", c++, y1, y2, y1 - y2);
 		if (y1 - y2 > 20)
 			printf("%d::TRONCO para BAIXO\n", c);

@@ -37,6 +37,7 @@ void SkeletonPoints::init() {
 	bodyPoints[LEFT_HAND]      = &leftHand;
 	bodyPoints[LEFT_ELBOW]     = &leftElbow;
 	bodyPoints[LEFT_SHOULDER]  = &leftShoulder;
+	bodyPoints[CENTER]         = &center;
 
 	bzero(pointsV,  sizeof(cv::Point)*MAX_BODY_POINTS*BUF_SIZE);
 	bzero(vHead,    MAX_BODY_POINTS);
@@ -82,7 +83,7 @@ void SkeletonPoints::computePoint(int type) {
 
 int SkeletonPoints::getCenterY() {
 	//return bodyPoints[HEAD]->y + 150;
-	return (bodyPoints[HEAD]->y - (bodyPoints[RIGHT_SHOULDER]->y+bodyPoints[LEFT_SHOULDER]->y)/2)*2;
+	return (head.y - (rightShoulder.y+leftShoulder.y)/2)*2;
 }
 
 
