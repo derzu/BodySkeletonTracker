@@ -225,8 +225,7 @@ void SampleViewer::display()
 
 
 		Mat * skeleton = skel->thinning(binarized);
-		skel->removeSmallsRegions(skeleton);
-		skel->locateMaximus(skeleton);
+		skel->analyse(skeleton);
 
 		std::vector<cv::Point> bdireito = skel->getSkeletonArm(skeleton, true);
 		std::vector<cv::Point> besquerdo= skel->getSkeletonArm(skeleton, false);
@@ -238,8 +237,6 @@ void SampleViewer::display()
 		//skel->drawOverFrame(besquerdo, frame);
 
 		skel->drawMarkers(frame);
-
-		skel->detectTiagoCommands();
 
 		if (skeleton)
 			delete skeleton;

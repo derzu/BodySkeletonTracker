@@ -18,6 +18,8 @@
 #include <mutex>
 #include <pthread.h>
 
+#include "SkeletonPoints.h"
+
 class Tiago {
 	public:
 		Tiago();
@@ -31,6 +33,8 @@ class Tiago {
 		void setAngShoulder(float ang);
 		void mutexLock();
 		void mutexUnlock();
+
+		void detectTiagoCommands(SkeletonPoints* sp, int afa);
 
 	private:
 		bool moving;
