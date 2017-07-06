@@ -309,32 +309,35 @@ void Skeleton::locateMainBodyPoints(cv::Mat &frame) {
 	if (maxRight.x!=0 && ( (maxRight.x-sp->rightHand.x > 5) && euclideanDist(maxRight, sp->rightHand)>20  && !( abs(maxRight.x-maxTopRight.x) < 15 && abs(maxRight.x-maxBottomRight.x) < 30) &&
 		euclideanDist(maxRight, sp->rightHand)>50)) {
 		sp->rightElbow = maxRight;
+		printf("\n\nelbow::case1\n");
 	}
 	// O ponto mais baixo estiver na linha da cintura (linha da cintura +- shift) E distante da mao E os Y's de maxBottom, maxRight e middleArm NAO estiverem proximos.
 	else if (maxBottomRight.x!=0 && ((maxBottomRight.y > sp->center.y-shift*1.3 && maxBottomRight.y < sp->center.y+shift) && euclideanDist(maxBottomRight, sp->rightHand)>50 &&
                !( abs(maxBottomRight.y-maxRight.y) < 20 && abs(maxBottomRight.y-middleArmRight.y) < 20) )) {
 		sp->rightElbow = maxBottomRight;
-		//printf("\n\nelbow::case2\n");
+		printf("\n\nelbow::case2\n");
 	}
 	// O y do mais baixo e do mais a direita e o do middleArm forem muito proximos. E o y do ombro longe (caso do braco todo esticado na linha do ombro). E distante da mao
 	else if (middleArmRight.x!=0 && (abs(maxRight.y-maxBottomRight.y)<35 && abs(maxRight.y-middleArmRight.y)<35 && abs(sp->rightShoulder.y-middleArmRight.y)>30 &&
 		euclideanDist(middleArmRight, sp->rightHand)>50 )) {
 		sp->rightElbow = middleArmRight;
-		//printf("\n\nelbow::case3\n");
+		printf("\n\nelbow::case3\n");
 	}
 	// O x do mais baixo e do mais a direita e o do middleArm forem muito proximos.  E distante da mao
 	else if (middleArmRight.x!=0 && (abs(maxRight.x-maxBottomRight.x)<35 && abs(maxRight.x-middleArmRight.x)<35 && /*abs(rightShoulder.y-middleArmRight.y)>30 &&*/
 		euclideanDist(middleArmRight, sp->rightHand)>50 )) {
 		sp->rightElbow = middleArmRight;
-		//printf("\n\nelbow::case4\n");
+		printf("\n\nelbow::case4\n");
 	}
 	// A mao estiver abaixo do centro OU
 	// A altura da mao para o ombro for pequena E a altura da mao para o ponto mais baixo for pequena E mao direita nao esta colada no corpo.
 	else if ((sp->rightHand.x!=0 && sp->rightShoulder.x!=0) &&
 		((sp->rightHand.y > sp->center.y+shift) || (abs(sp->rightShoulder.y-sp->rightHand.y)<40 && abs(maxBottomRight.y-sp->rightHand.y)<30 && sp->rightHand.x-sp->center.x > afa28))) { 
 		sp->rightElbow = Point((sp->rightHand.x+sp->rightShoulder.x)/2, (sp->rightHand.y+sp->rightShoulder.y)/2); // braco esticado
-		//printf("\n\nelbow::case5\n");
+		printf("\n\nelbow::case5\n");
 	}
+	else
+		printf("\n\nelbow::case NENHUM\n");
 	if (sp->rightElbow.x!=0) {
 		sp->computePoint(SkeletonPoints::RIGHT_ELBOW);
 	}
@@ -886,7 +889,6 @@ std::vector<cv::Point> Skeleton::getSkeletonArm(Mat * skeleton, bool right) {
 		pontos_ordered_smoth.push_back(m);
 	}
 
-if (right) {
 	cv::Point * el = getElbowHard(pontos_ordered_smoth);
 	if (el) {
 		if (right) {
@@ -898,7 +900,6 @@ if (right) {
 		}
 		delete el;
 	}
-}
 
 	return pontos_ordered_smoth;
 }

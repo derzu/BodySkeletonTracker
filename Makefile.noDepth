@@ -8,4 +8,4 @@ all: BodySkeletonTracker
 BodySkeletonTracker:
 	$(CXX) src/main.cpp src/Skeleton.cpp src/Viewer.cpp src/Tiago.cpp $(LDFLAGS) -o Bin/x64-Release/BodySkeletonTracker
 
-clean: ; rm -f src/*.o Bin/x64-Release/BodySkeletonTracker
+clean: ; rm -f src/*.o Bin/x64-Release/BodySkeletonTracker *~ src/*~ include/*~

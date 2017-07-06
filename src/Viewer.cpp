@@ -108,7 +108,7 @@ printf("Compilado SEM Depth\n");
 	while (1) {
 		display();
 		//char c = (char)waitKey(10);
-		char c = (char)waitKey(10);
+		char c = (char)waitKey(200);
 	        if( c == 27 || c == 'q' || c == 'Q' )
         	        break;
 	}
@@ -165,7 +165,7 @@ void SampleViewer::display()
 		m_nTexMapX = srcFrame.cols;
 		m_nTexMapY = srcFrame.rows;
 #endif
-
+//printf("w x h = %d x %d\n", m_nTexMapX, m_nTexMapY);
 		m_pTexMap = new unsigned char[m_nTexMapX * m_nTexMapY * sizePixel];
 
 		skel = new Skeleton(m_nTexMapX, m_nTexMapY, subSample);
