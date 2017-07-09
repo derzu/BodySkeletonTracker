@@ -5,7 +5,9 @@
 Tiago::Tiago() {
 	moving = false;
 	t = NULL;
-	//bzero(centerHV,       sizeof(int)*BUF_SIZE);
+	
+	bzero(walkDirectionQ, QUEUE_SIZE);
+	walkDirectionH = 0;
 }
 
 float Tiago::getAngElbow() {
@@ -97,9 +99,51 @@ void * Tiago::moveArm(void * t) {
 	tiago->mutexUnlock();
 }
 
+// pega o valor medio de uma regiao 3x3 circundando o ponto x,y. Pontos com valor zero nao sao considerados
+int Tiago::getMeanValue(cv::Mat &depthMat, cv::Point& p) {
+	int v;
+	int q=0;
+	int t=0;
+	int w = depthMat.cols;
+	int h = depthMat.rows;
+	
+	if (p.x<w-1 && p.x>0 && p.y>0 && p.y<w-1) {
+		v = depthMat.data[(p.y-1)*w + p.x-1];
+		if (v) {
+			t += v; q++; }
+		v = depthMat.data[(p.y-1)*w + p.x];
+		if (v) {
+			t += v; q++; }
+		v = depthMat.data[(p.y-1)*w + p.x+1];
+		if (v) {
+			t += v; q++; }
+		v = depthMat.data[(p.y  )*w + p.x-1];
+		if (v) {
+			t += v; q++; }
+		v = depthMat.data[(p.y  )*w + p.x];
+		if (v) {
+			t += v; q++; }
+		v = depthMat.data[(p.y  )*w + p.x+1];
+		if (v) {
+			t += v; q++; }
+		v = depthMat.data[(p.y+1)*w + p.x-1];
+		if (v) {
+			t += v; q++; }
+		v = depthMat.data[(p.y+1)*w + p.x];
+		if (v) {
+			t += v; q++; }
+		v = depthMat.data[(p.y+1)*w + p.x+1];
+		if (v) {
+			t += v; q++; }
+	}
+	
+	if (q>0)
+		return t/q;
+	else
+		return t;
+}
 
-
-void Tiago::detectTiagoCommands(SkeletonPoints* sp, int afa) {
+void Tiago::detectTiagoCommands(SkeletonPoints* sp, int afa, cv::Mat &depthMat) {
 	static int c=0;
 	c++;
 return;
@@ -125,7 +169,32 @@ return;
 		euclideanDist(middleArmRight, sp->rightHand)>50 )) {
 			printf("BRACO ESTICADO HORIZONTAL\n");
 		}*/
+		
+		
+		// TODO detectar profundidade dos ombros
+		int profRight = getMeanValue(depthMat, sp->rightShoulder);
+		int profLeft  = getMeanValue(depthMat, sp->leftShoulder);
+		//int profRight = getMeanValue(depthMat, sp->rightHand);
+		//int profLeft  = getMeanValue(depthMat, sp->leftHand);
+		
+		
+		int diff =  profRight - profLeft;
+		if (profRight>0 && profLeft>0) {
+			walkDirection = NONE;
+			if (diff > 50)
+				walkDirection = RIGHT;
+			else if (diff < -50)
+				walkDirection = LEFT;
+			if (walkDirection!=NONE)
+				walkDirectionQ[walkDirectionH++ % QUEUE_SIZE] = walkDirection;
+			walkDirection = getMedianaVector(walkDirectionQ);
+		}
+			
 
+		if (profRight>0 && profLeft>0) {
+			printf("profundidade ombros: %3d %3d %4d %s %s\n", profRight, profLeft, diff, diff > 0 ? "DIREITA" : "ESQUERDA",  walkDirection==RIGHT ? "DIREITA" : walkDirection==LEFT ? "ESQUERDA" : "NONE");
+		}
+return;
 
 		// so entra a cada 10c para nao poluir muito o terminal	
 		//if (c%10==0)
@@ -165,5 +234,25 @@ return;
 		}
 }
 
+
+/**
+ * Mediana
+ **/
+int Tiago::getMedianaVector(int vector[]) {
+	int m = 1;
+	int q=0;
+
+	SkeletonPoints::quick_sort(vector, 0, QUEUE_SIZE);
+
+	for (int i=0 ; i<QUEUE_SIZE ; i++) {
+		if (vector[i]!=0) {
+			q++;
+		}
+	}
+	if (q>0)
+		return vector[q/2+QUEUE_SIZE-q];
+
+	return m;
+}
 
 

@@ -22,13 +22,13 @@ class SkeletonDepth {
 	closest_point::IntPoint3D closest;
 	float m_pDepthHist[MAX_DEPTH];
 
-	const float * paintDepthCopyPixel(const openni::DepthPixel* pDepth, int x, int y, cv::Mat * skel);
+	const float * paintDepthCopyPixel(const openni::DepthPixel* pDepth, int x, int y, cv::Mat &binarized);
 	void setDiffH(int d);
 	void setDiffW(int d);
 
     public:
 	SkeletonDepth(int, int, int);
-	void paintDepthCopy(openni::RGB888Pixel*m_pTexMap, openni::VideoFrameRef depthFrame, cv::Mat * binarized);
+	void paintDepthCopy(openni::RGB888Pixel*m_pTexMap, openni::VideoFrameRef depthFrame, cv::Mat &binarized, cv::Mat &depthMat);
 	void prepareAnalisa(const closest_point::IntPoint3D& closest);
 };
 

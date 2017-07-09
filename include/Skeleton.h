@@ -7,8 +7,6 @@
 #include "Tiago.h"
 #include "SkeletonPoints.h"
 
-#define BUF_SIZE 5
-
 class Skeleton {
     private:
         int subSample;
@@ -23,6 +21,9 @@ class Skeleton {
 	cv::Point maxTopCenter,    maxTopRight,    maxTopLeft;
 	cv::Point maxBottomCenter, maxBottomRight, maxBottomLeft;
 	cv::Point middleArmRight, middleArmLeft;
+	cv::Point middleArmRight45, middleArmLeft45;
+	cv::Point maxRightMaxBottom, maxLeftMaxBottom;
+	cv::Point middleStraightArmRight, middleStraightArmLeft;
 
 	// Skeleton Points (hands, shoulders, elbow, head)
 	// Pontos do esqueleto (maos, ombros, cotovelos, cabeca)
@@ -46,11 +47,8 @@ class Skeleton {
 	//float euclideanDist(cv::Point& p, cv::Point& q);
 	void getSizeRegion(unsigned char * frame, int x, int y, int *quant);
 	void clearRegion(unsigned char * frame, int x, int y);
-	cv::Point * getElbowHard(std::vector<cv::Point> &armPoints);
+	cv::Point * getElbowHard(std::vector<cv::Point> &armPoints, int ang);
 	cv::Point mediaPoint(cv::Mat * frame);
-	int calculaMedia(int vector[]);
-	int calculaMediana(int vector[]);
-	cv::Point calculaMediana(cv::Point vector[]);
 	void removeSmallsRegions(cv::Mat * frame);
 	void locateMaximus(cv::Mat *frame);
 
@@ -59,9 +57,11 @@ class Skeleton {
 	virtual ~Skeleton();
 	void locateMainBodyPoints(cv::Mat &frame);
 	void drawMarkers(cv::Mat &frame);
+	void prepare(cv::Mat &depth);
 	void drawOverFrame(cv::Mat * skelImg, cv::Mat &frame);
 	void drawOverFrame(std::vector<cv::Point> pontos, cv::Mat &frame);
-	cv::Mat * thinning(cv::Mat &binarized);
+	cv::Mat * thinning01(cv::Mat &binarized);
+	cv::Mat * thinning02(cv::Mat &binarized);
 	void detectBiggerRegion(cv::Mat &frame);
 	std::vector<cv::Point> getSkeletonArm(cv::Mat * skeleton, bool right);
 	SkeletonPoints* getSkeletonPoints();

@@ -1,6 +1,14 @@
 #ifndef TIAGO_H
 #define TIAGO_H
 
+//head_1_joint
+//head_2_joint
+//torso_lift_joint 
+//gripper_right_finger_joint (stell)
+//gripper_left_finger_joint  (stell)
+//hand_index_joint (titanium) // indicador
+//hand_mrl_joint   (titanium) // tres dedos
+//hand_thumb_joint (titanium) // polegar
 //arm_1_joint ombro    frente/tras
 //arm_2_joint ombro    direita/esquerda 1.1 0 -1.2
 //arm_3_joint braco    gira             0 (cotovelo vai para baixo) -1.5 (cotovelo vai para frente/tras) -3 (cotovelo vai para cima)
@@ -20,6 +28,8 @@
 
 #include "SkeletonPoints.h"
 
+#define QUEUE_SIZE 10
+
 class Tiago {
 	public:
 		Tiago();
@@ -34,11 +44,22 @@ class Tiago {
 		void mutexLock();
 		void mutexUnlock();
 
-		void detectTiagoCommands(SkeletonPoints* sp, int afa);
-
+		void detectTiagoCommands(SkeletonPoints* sp, int afa, cv::Mat &frame);
+		int  getMeanValue(cv::Mat &depthMat, cv::Point& p);
+		int  getMedianaVector(int vector[]);
+		
+		// Directions Constants
+		static const int NONE  = 0;
+		static const int RIGHT = 1;
+		static const int LEFT  = 2;
 	private:
 		bool moving;
 		float angShoulder, angElbow;
+		
+		int walkDirection;
+		int walkDirectionQ[QUEUE_SIZE]; // vector to smoth the directions
+		unsigned char walkDirectionH; // head
+		
 
 		std::thread * t;
 		std::mutex mtx;

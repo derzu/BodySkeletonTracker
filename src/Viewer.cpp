@@ -107,8 +107,11 @@ printf("Compilado SEM Depth\n");
 
 	while (1) {
 		display();
-		//char c = (char)waitKey(10);
-		char c = (char)waitKey(200);
+		char c = (char)waitKey(10);
+		//char c = (char)waitKey(100);
+		//char c = (char)waitKey(200);
+		//char c = (char)waitKey(500);
+		//char c = (char)waitKey(1000);
 	        if( c == 27 || c == 'q' || c == 'Q' )
         	        break;
 	}
@@ -186,12 +189,13 @@ void SampleViewer::display()
 	if (srcFrame.isValid())
 	{
 		Mat binarized(cv::Size(m_nTexMapX/subSample, m_nTexMapY/subSample), CV_8UC1, cv::Scalar(0));
+		Mat depthMat(cv::Size(m_nTexMapX, m_nTexMapY), CV_8UC1, cv::Scalar(0));
 
 		memset(m_pTexMap, 0, m_nTexMapX*m_nTexMapY*sizeof(openni::RGB888Pixel));
 
 		skelD->prepareAnalisa(closest);
 		//colore e obtem a imagem binarizada
-		skelD->paintDepthCopy((openni::RGB888Pixel*)m_pTexMap, srcFrame, &binarized);
+		skelD->paintDepthCopy((openni::RGB888Pixel*)m_pTexMap, srcFrame, binarized, depthMat);
 
 		// Converte o openni::VideoFrameRef (srcFrame) para um cv::Mat (frame)
 		Mat frame = Mat(Size(m_nTexMapX, m_nTexMapY), CV_8UC3);
@@ -224,7 +228,7 @@ void SampleViewer::display()
 		//Canny(binarized, binarized2, 50, 200, 3);
 
 
-		Mat * skeleton = skel->thinning(binarized);
+		Mat * skeleton = skel->thinning02(binarized);
 		skel->analyse(skeleton);
 
 		std::vector<cv::Point> bdireito = skel->getSkeletonArm(skeleton, true);
@@ -233,10 +237,12 @@ void SampleViewer::display()
 		skel->locateMainBodyPoints(binarizedCp);
 
 		//skel->drawOverFrame(skeleton, frame);
-		skel->drawOverFrame(bdireito, frame);
+		//skel->drawOverFrame(bdireito, frame);
 		//skel->drawOverFrame(besquerdo, frame);
+		//skel->drawOverFrame(&binarizedCp, frame);
 
 		skel->drawMarkers(frame);
+		skel->prepare(depthMat);
 
 		if (skeleton)
 			delete skeleton;

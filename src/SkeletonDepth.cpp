@@ -23,7 +23,7 @@ SkeletonDepth::SkeletonDepth(int width, int height, int subSample) {
 
 
 
-void SkeletonDepth::paintDepthCopy(openni::RGB888Pixel*m_pTexMap, openni::VideoFrameRef depthFrame, cv::Mat * binarized) {
+void SkeletonDepth::paintDepthCopy(openni::RGB888Pixel*m_pTexMap, openni::VideoFrameRef depthFrame, cv::Mat &binarized, cv::Mat &depthMat) {
 	calculateHistogram(m_pDepthHist, MAX_DEPTH, depthFrame);
 	float factor[3] = {1, 1, 1};
 	const float *f;
@@ -33,31 +33,35 @@ void SkeletonDepth::paintDepthCopy(openni::RGB888Pixel*m_pTexMap, openni::VideoF
 	int rowSize = depthFrame.getStrideInBytes() / sizeof(openni::DepthPixel);
 
 	max = 0;
-
-	for (int y = 0; y < height; ++y)
-	{
-		const openni::DepthPixel* pDepth = pDepthRow;
-		openni::RGB888Pixel* pTex = pTexRow + depthFrame.getCropOriginX();
-		setDiffH(abs(closest.Y-y)/5); // diferenca (height) do ponto atual para o ponto mais proximo
-		for (int x = 0; x < width; ++x, ++pDepth, ++pTex)
+	
+	if (pDepthRow) 
+		for (int y = 0; y < height; ++y)
 		{
-			if (*pDepth != 0)
+			const openni::DepthPixel* pDepth = pDepthRow;
+			openni::RGB888Pixel* pTex = pTexRow + depthFrame.getCropOriginX();
+			setDiffH(abs(closest.Y-y)/5); // diferenca (height) do ponto atual para o ponto mais proximo
+			for (int x = 0; x < width; ++x, ++pDepth, ++pTex)
 			{
-				setDiffW(abs(closest.X-x)/5); // diferenca (width) do ponto atual para o ponto mais proximo
-				f = paintDepthCopyPixel(pDepth, x, y, binarized);
-				if (f)
-					memcpy(factor, f, sizeof(float)*3);
+				if (*pDepth != 0)
+				{
+					setDiffW(abs(closest.X-x)/5); // diferenca (width) do ponto atual para o ponto mais proximo
+					f = paintDepthCopyPixel(pDepth, x, y, binarized);
+					depthMat.data[y*height + x] = *pDepth; 
+					if (f)
+						memcpy(factor, f, sizeof(float)*3);
 
-				int nHistValue = m_pDepthHist[*pDepth];
-				pTex->r = nHistValue*factor[0];
-				pTex->g = nHistValue*factor[1];
-				pTex->b = nHistValue*factor[2];
-				factor[0] = factor[1] = factor[2] = 1;
+					int nHistValue = m_pDepthHist[*pDepth];
+					pTex->r = nHistValue*factor[0];
+					pTex->g = nHistValue*factor[1];
+					pTex->b = nHistValue*factor[2];
+					factor[0] = factor[1] = factor[2] = 1;
+				}
 			}
+			pDepthRow += rowSize;
+			pTexRow += width;
 		}
-		pDepthRow += rowSize;
-		pTexRow += width;
-	}
+	else
+		printf("2::pDepthRow = NULL\n");
 
 	if (max>0)
 		maxDiff = max;
@@ -67,7 +71,7 @@ void SkeletonDepth::paintDepthCopy(openni::RGB888Pixel*m_pTexMap, openni::VideoF
 
 
 
-const float * SkeletonDepth::paintDepthCopyPixel(const openni::DepthPixel* pDepth, int x, int y, cv::Mat * binarized) {
+const float * SkeletonDepth::paintDepthCopyPixel(const openni::DepthPixel* pDepth, int x, int y, cv::Mat &binarized) {
 	//diff = 180 + diff_w + diff_h;
 	diff = 600 + diff_w + diff_h;
 
@@ -82,7 +86,7 @@ const float * SkeletonDepth::paintDepthCopyPixel(const openni::DepthPixel* pDept
 	else if (*pDepth >= closest.Z && *pDepth <= closest.Z+diff)
 	{
 		if (y%subSample==0 && x%subSample==0)
-			binarized->data[(y/subSample)*lineSize+x/subSample]=255;
+			binarized.data[(y/subSample)*lineSize+x/subSample]=255;
 
 		if (diff>max) {
 			max = diff;

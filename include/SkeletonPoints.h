@@ -12,6 +12,7 @@ class SkeletonPoints {
 		SkeletonPoints();
 		SkeletonPoints(cv::Point rightHand, cv::Point rightElbow, cv::Point rightShoulder, cv::Point leftHand, cv::Point leftElbow, cv::Point leftShoulder, cv::Point head);
 		void computePoint(int type);
+		static void quick_sort(int *a, int left, int right);
 
 		// Main body points
 		cv::Point rightHand, rightElbow, rightShoulder;
@@ -42,6 +43,7 @@ class SkeletonPoints {
 		void init();
 		int addToVector(int type, cv::Point *el);
 		cv::Point getMediaVector(int type);
+		cv::Point getMedianaVector(int type);
 
 
 

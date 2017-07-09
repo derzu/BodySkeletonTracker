@@ -89,18 +89,22 @@ void calculateHistogram(float* pHistogram, int histogramSize, const openni::Vide
 	int width = frame.getWidth();
 
 	unsigned int nNumberOfPoints = 0;
-	for (int y = 0; y < height; ++y)
-	{
-		for (int x = 0; x < width; ++x, ++pDepth)
+	if (pDepth) {
+		for (int y = 0; y < height; ++y)
 		{
-			if (*pDepth != 0)
+			for (int x = 0; x < width; ++x, ++pDepth)
 			{
-				pHistogram[*pDepth]++;
-				nNumberOfPoints++;
+				if (*pDepth != 0)
+				{
+					pHistogram[*pDepth]++;
+					nNumberOfPoints++;
+				}
 			}
+			pDepth += restOfRow;
 		}
-		pDepth += restOfRow;
-	}
+	} else
+		printf("1::pDepth = NULL\n");
+
 	for (int nIndex=1; nIndex<histogramSize; nIndex++)
 	{
 		pHistogram[nIndex] += pHistogram[nIndex-1];
