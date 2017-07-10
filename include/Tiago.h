@@ -3,7 +3,7 @@
 
 //head_1_joint
 //head_2_joint
-//torso_lift_joint 
+//torso_lift_joint  1 e -1
 //gripper_right_finger_joint (stell)
 //gripper_left_finger_joint  (stell)
 //hand_index_joint (titanium) // indicador
@@ -62,6 +62,8 @@ class Tiago {
 		static const int LEFT  = 2;
 		static const int FRONT = 1;
 		static const int BACK  = 2;
+		static const int UP    = 1;
+		static const int DOWN  = 2;
 	private:
 		void moveBase(int walkDirection, int walkAngle);
 		void initArm();
@@ -69,6 +71,7 @@ class Tiago {
 		bool moving;
 		float angShoulder, angElbow;
 		
+		int tronco, lastTronco;
 		int walkDirection, lastWalkDirection;
 		int walkAngle, lastWalkAngle;
 		int walkAngleQ[QUEUE_SIZE]; // vector to smoth the directions

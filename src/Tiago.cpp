@@ -16,6 +16,9 @@ Tiago::Tiago() {
 	lastWalkDirection = -1;
 	lastWalkAngle = -1;
 	
+	tronco=NONE;
+	lastTronco=-1;
+	
         socketC = new SocketClient(12345, "127.0.0.1");
         socketC->conecta();
         
@@ -237,15 +240,29 @@ void Tiago::detectTiagoCommands(SkeletonPoints* sp, int afa, short depthMat[], c
 	{
 		// Tronco
 		// media dos dois ombros atual
-		/*int y1 = (sp->rightShoulder.y + sp->leftShoulder.y)/2; 
+		int y1 = (sp->rightShoulder.y + sp->leftShoulder.y)/2; 
 		// ultima media dos dois ombros armazenada
 		int y2 = (sp->pointsV[SkeletonPoints::RIGHT_SHOULDER][sp->vHead[SkeletonPoints::RIGHT_SHOULDER] % BUF_SIZE].y + 
 			  sp->pointsV[SkeletonPoints::LEFT_SHOULDER][sp->vHead[SkeletonPoints::LEFT_SHOULDER] % BUF_SIZE].y)/2;
 		//printf("%d::Recebendo comandos (%d - %d)=%d\n", c++, y1, y2, y1 - y2);
-		if (y1 - y2 >= 18)
-			printf("%d::TRONCO para BAIXO\n", c);
-		if (y1 - y2 <= -18)
-			printf("%d::TRONCO para CIMA\n", c);*/
+		tronco = NONE;
+		if (y1 - y2 >= 18) {
+			tronco = DOWN;
+		}
+		if (y1 - y2 <= -18) {
+			tronco = UP;
+		}
+		
+		
+		if (tronco!=lastTronco && tronco!=NONE) {
+			printf("%d::TRONCO::%s\n", c, tronco==UP? "UP" : "DOWN");
+			if (tronco==UP)
+				systemThread("rosrun play_motion move_joint torso_lift_joint  1 0.2");
+			else
+				systemThread("rosrun play_motion move_joint torso_lift_joint -1 0.2");
+		}
+		
+		lastTronco = tronco;
 
 //return;
 		// so entra a cada 10c para nao poluir muito o terminal	
