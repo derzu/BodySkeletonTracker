@@ -28,7 +28,7 @@ class SkeletonDepth {
 
     public:
 	SkeletonDepth(int, int, int);
-	void paintDepthCopy(openni::RGB888Pixel*m_pTexMap, openni::VideoFrameRef depthFrame, cv::Mat &binarized, cv::Mat &depthMat);
+	void paintDepthCopy(openni::RGB888Pixel*m_pTexMap, openni::VideoFrameRef depthFrame, cv::Mat &binarized, short depthMat[]);
 	void prepareAnalisa(const closest_point::IntPoint3D& closest);
 };
 

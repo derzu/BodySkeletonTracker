@@ -27,8 +27,11 @@
 #include <pthread.h>
 
 #include "SkeletonPoints.h"
+#include "MWClosestPoint.h"
 
-#define QUEUE_SIZE 10
+#include <SocketClient.h>
+
+#define QUEUE_SIZE 3
 
 class Tiago {
 	public:
@@ -44,26 +47,38 @@ class Tiago {
 		void mutexLock();
 		void mutexUnlock();
 
-		void detectTiagoCommands(SkeletonPoints* sp, int afa, cv::Mat &frame);
-		int  getMeanValue(cv::Mat &depthMat, cv::Point& p);
+		void detectTiagoCommands(SkeletonPoints* sp, int afa, short depthMat[], closest_point::IntPoint3D& closest);
+		int  getMeanValue(short depthMat[], cv::Point& p);
 		int  getMedianaVector(int vector[]);
+		int  getModeVector(int vector[]);
+
 		
-		// Directions Constants
+		void systemThread(const char * command);
+		static void * systemThread2(void * command);
+		
+		// Directions Constants from the base movements
 		static const int NONE  = 0;
 		static const int RIGHT = 1;
 		static const int LEFT  = 2;
+		static const int FRONT = 1;
+		static const int BACK  = 2;
 	private:
+		void moveBase(int walkDirection, int walkAngle);
+		void initArm();
+			
 		bool moving;
 		float angShoulder, angElbow;
 		
-		int walkDirection;
-		int walkDirectionQ[QUEUE_SIZE]; // vector to smoth the directions
-		unsigned char walkDirectionH; // head
+		int walkDirection, lastWalkDirection;
+		int walkAngle, lastWalkAngle;
+		int walkAngleQ[QUEUE_SIZE]; // vector to smoth the directions
+		unsigned char walkAngleH; // head
 		
-
+	        SocketClient *socketC;
 		std::thread * t;
 		std::mutex mtx;
 		pthread_t thread1;
+		pthread_t thread2;
 };
 
 

@@ -50,7 +50,7 @@ Skeleton::~Skeleton() {
 /**
  * Calculate de Euclidian distance between 2 points.
  **/
-float euclideanDist(cv::Point& p, cv::Point& q) {
+float Skeleton::euclideanDist(cv::Point& p, cv::Point& q) {
 	if (p.x==q.x && p.y==q.y)
 		return 0;
 	cv::Point diff = p - q;
@@ -570,8 +570,8 @@ void Skeleton::drawMarkers(Mat &frame) {
 }
 
 
-void Skeleton::prepare(cv::Mat &depth) {
-	tiago->detectTiagoCommands(sp, afa*subSample, depth);
+void Skeleton::prepare(short depth[], closest_point::IntPoint3D& closest) {
+	tiago->detectTiagoCommands(sp, afa*subSample, depth, closest);
 }
 
 /**

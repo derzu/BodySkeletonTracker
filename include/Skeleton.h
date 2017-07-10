@@ -44,7 +44,6 @@ class Skeleton {
 	void zeraMaximus();
 	void setMaximus();
 	void locateShoulders(cv::Mat &frame);
-	//float euclideanDist(cv::Point& p, cv::Point& q);
 	void getSizeRegion(unsigned char * frame, int x, int y, int *quant);
 	void clearRegion(unsigned char * frame, int x, int y);
 	cv::Point * getElbowHard(std::vector<cv::Point> &armPoints, int ang);
@@ -55,9 +54,10 @@ class Skeleton {
     public:
 	Skeleton(int width, int height, int subSample);
 	virtual ~Skeleton();
+	static float euclideanDist(cv::Point& p, cv::Point& q);
 	void locateMainBodyPoints(cv::Mat &frame);
 	void drawMarkers(cv::Mat &frame);
-	void prepare(cv::Mat &depth);
+	void prepare(short depth[], closest_point::IntPoint3D& closest);
 	void drawOverFrame(cv::Mat * skelImg, cv::Mat &frame);
 	void drawOverFrame(std::vector<cv::Point> pontos, cv::Mat &frame);
 	cv::Mat * thinning01(cv::Mat &binarized);

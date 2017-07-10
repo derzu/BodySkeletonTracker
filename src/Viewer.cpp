@@ -115,6 +115,7 @@ printf("Compilado SEM Depth\n");
 	        if( c == 27 || c == 'q' || c == 'Q' )
         	        break;
 	}
+	//int r = system("killall -9 rostopic");
 #ifdef DEPTH
 	return openni::STATUS_OK;
 #else
@@ -177,7 +178,8 @@ void SampleViewer::display()
 #endif
 		cvNamedWindow("Skeleton Traker", CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO | CV_GUI_EXPANDED);
 		//cvSetWindowProperty("Skeleton Traker", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
-		resizeWindow("Skeleton Traker", m_nTexMapX*2, m_nTexMapY*2);
+		//resizeWindow("Skeleton Traker", m_nTexMapX*2, m_nTexMapY*2);
+		resizeWindow("Skeleton Traker", m_nTexMapX, m_nTexMapY);
 	}
 
 //printf("sizeof(openni::RGB888Pixel)=%ld\n", sizeof(openni::RGB888Pixel) );
@@ -189,7 +191,8 @@ void SampleViewer::display()
 	if (srcFrame.isValid())
 	{
 		Mat binarized(cv::Size(m_nTexMapX/subSample, m_nTexMapY/subSample), CV_8UC1, cv::Scalar(0));
-		Mat depthMat(cv::Size(m_nTexMapX, m_nTexMapY), CV_8UC1, cv::Scalar(0));
+		short depthMat[m_nTexMapX*m_nTexMapY*sizeof(short)];
+		bzero(depthMat, m_nTexMapX*m_nTexMapY*sizeof(short));
 
 		memset(m_pTexMap, 0, m_nTexMapX*m_nTexMapY*sizeof(openni::RGB888Pixel));
 
@@ -242,7 +245,7 @@ void SampleViewer::display()
 		//skel->drawOverFrame(&binarizedCp, frame);
 
 		skel->drawMarkers(frame);
-		skel->prepare(depthMat);
+		skel->prepare(depthMat, (closest_point::IntPoint3D&) closest);
 
 		if (skeleton)
 			delete skeleton;

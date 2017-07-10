@@ -2,12 +2,32 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <Skeleton.h>
+
 Tiago::Tiago() {
 	moving = false;
 	t = NULL;
 	
-	bzero(walkDirectionQ, QUEUE_SIZE);
-	walkDirectionH = 0;
+	bzero(walkAngleQ, sizeof(int)*QUEUE_SIZE);
+	walkAngleH = 0;
+	
+	walkDirection = NONE;
+	walkAngle     = NONE;
+	lastWalkDirection = -1;
+	lastWalkAngle = -1;
+	
+        socketC = new SocketClient(12345, "127.0.0.1");
+        socketC->conecta();
+        
+        initArm();
+}
+
+void Tiago::initArm() {
+	int r;
+	r = system("rosrun play_motion move_joint arm_1_joint 0 0.2");
+	r = system("rosrun play_motion move_joint arm_2_joint 0 0.2");
+	r = system("rosrun play_motion move_joint arm_3_joint 0 0.2");
+	r = system("rosrun play_motion move_joint arm_6_joint 0 0.2");
 }
 
 float Tiago::getAngElbow() {
@@ -51,7 +71,6 @@ void Tiago::moveArmThread() {
 
 	int threadId = pthread_create( &thread1, NULL, &Tiago::moveArm, (void *)this);
 }
-
 
 
 void * Tiago::moveArm(void * t) {
@@ -99,60 +118,126 @@ void * Tiago::moveArm(void * t) {
 	tiago->mutexUnlock();
 }
 
-// pega o valor medio de uma regiao 3x3 circundando o ponto x,y. Pontos com valor zero nao sao considerados
-int Tiago::getMeanValue(cv::Mat &depthMat, cv::Point& p) {
+/*// pega o valor medio de uma regiao 3x3 circundando o ponto x,y. Pontos com valor zero nao sao considerados
+int Tiago::getMeanValue(short depthMat[], cv::Point& p) {
 	int v;
 	int q=0;
 	int t=0;
-	int w = depthMat.cols;
-	int h = depthMat.rows;
+	int w = 640;
+	int h = 480;
 	
 	if (p.x<w-1 && p.x>0 && p.y>0 && p.y<w-1) {
-		v = depthMat.data[(p.y-1)*w + p.x-1];
-		if (v) {
-			t += v; q++; }
-		v = depthMat.data[(p.y-1)*w + p.x];
-		if (v) {
-			t += v; q++; }
-		v = depthMat.data[(p.y-1)*w + p.x+1];
-		if (v) {
-			t += v; q++; }
-		v = depthMat.data[(p.y  )*w + p.x-1];
-		if (v) {
-			t += v; q++; }
-		v = depthMat.data[(p.y  )*w + p.x];
-		if (v) {
-			t += v; q++; }
-		v = depthMat.data[(p.y  )*w + p.x+1];
-		if (v) {
-			t += v; q++; }
-		v = depthMat.data[(p.y+1)*w + p.x-1];
-		if (v) {
-			t += v; q++; }
-		v = depthMat.data[(p.y+1)*w + p.x];
-		if (v) {
-			t += v; q++; }
-		v = depthMat.data[(p.y+1)*w + p.x+1];
-		if (v) {
-			t += v; q++; }
+		v = depthMat[(p.y-1)*w + (p.x-1)];printf("v1=%d\n", v);
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y-1)*w + p.x];    printf("v2=%d\n", v);
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y-1)*w + (p.x+1)];printf("v3=%d\n", v);
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y  )*w + (p.x-1)];printf("v4=%d\n", v);
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y  )*w + p.x];    printf("v5=%d\n", v);
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y  )*w + (p.x+1)];printf("v6=%d\n", v);
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y+1)*w + (p.x-1)];printf("v7=%d\n", v);
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y+1)*w + p.x];    printf("v8=%d\n", v);
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y+1)*w + (p.x+1)];printf("v9=%d::%d\n", v, q);
+		if (v) { t += v; q++; }
 	}
 	
 	if (q>0)
 		return t/q;
 	else
 		return t;
+}*/
+
+// pega o valor medio de uma regiao 5x5 circundando o ponto x,y. Pontos com valor zero nao sao considerados
+int Tiago::getMeanValue(short depthMat[], cv::Point& p) {
+	int v;
+	int q=0;
+	int t=0;
+	int w = 640;
+	int h = 480;
+	
+	if (p.x<w-2 && p.x>1 && p.y>1 && p.y<w-2) {
+		v = depthMat[(p.y-2)*w + (p.x-2)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y-2)*w + (p.x-1)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y-2)*w +  p.x];    
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y-2)*w + (p.x+1)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y-2)*w + (p.x+2)];
+		if (v) { t += v; q++; }
+	
+		v = depthMat[(p.y-1)*w + (p.x-2)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y-1)*w + (p.x-1)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y-1)*w +  p.x];    
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y-1)*w + (p.x+1)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y-1)*w + (p.x+2)];
+		if (v) { t += v; q++; }
+
+		v = depthMat[(p.y)*w + (p.x-2)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y)*w + (p.x-1)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y)*w +  p.x];    
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y)*w + (p.x+1)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y)*w + (p.x+2)];
+		if (v) { t += v; q++; }
+
+		v = depthMat[(p.y+1)*w + (p.x-2)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y+1)*w + (p.x-1)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y+1)*w +  p.x];    
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y+1)*w + (p.x+1)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y+1)*w + (p.x+2)];
+		if (v) { t += v; q++; }
+
+		v = depthMat[(p.y+2)*w + (p.x-2)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y+2)*w + (p.x-1)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y+2)*w +  p.x];    
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y+2)*w + (p.x+1)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y+2)*w + (p.x+2)];
+		if (v) { t += v; q++; }
+		
+	}
+	
+	if (q>0) {
+		//printf("v9::%d::%d::%d::%.1f\n", t, q, t/q, (float)t/(float)q);
+		return t/q;
+	}
+	else
+		return t;
 }
 
-void Tiago::detectTiagoCommands(SkeletonPoints* sp, int afa, cv::Mat &depthMat) {
+void Tiago::detectTiagoCommands(SkeletonPoints* sp, int afa, short depthMat[], closest_point::IntPoint3D& closest) {
 	static int c=0;
 	c++;
-return;
+	cv::Point closestCv = cv::Point(closest.X, closest.Y);
+//return;
 	// mao esquerda esticada e afastada do corpo, comandos ativados.
 	if (sp->leftHand.x!=0 && sp->leftHand.x < sp->center.x - afa*2 && sp->leftHand.y > sp->center.y + afa)
 	{
 		// Tronco
 		// media dos dois ombros atual
-		int y1 = (sp->rightShoulder.y + sp->leftShoulder.y)/2; 
+		/*int y1 = (sp->rightShoulder.y + sp->leftShoulder.y)/2; 
 		// ultima media dos dois ombros armazenada
 		int y2 = (sp->pointsV[SkeletonPoints::RIGHT_SHOULDER][sp->vHead[SkeletonPoints::RIGHT_SHOULDER] % BUF_SIZE].y + 
 			  sp->pointsV[SkeletonPoints::LEFT_SHOULDER][sp->vHead[SkeletonPoints::LEFT_SHOULDER] % BUF_SIZE].y)/2;
@@ -160,42 +245,9 @@ return;
 		if (y1 - y2 >= 18)
 			printf("%d::TRONCO para BAIXO\n", c);
 		if (y1 - y2 <= -18)
-			printf("%d::TRONCO para CIMA\n", c);
+			printf("%d::TRONCO para CIMA\n", c);*/
 
-
-		// Braco // TODO verificar se o rightShoulder.y-middleArmRight.y eh menor ou maior.
-		// O y do mais baixo e do mais a direita e o do middleArm forem muito proximos. E o y do ombro longe (caso do braco todo esticado na linha do ombro). E distante da mao
-/*		if (middleArmRight.x!=0 && (abs(maxRight.y-maxBottomRight.y)<15 && abs(maxRight.y-middleArmRight.y)<15 && abs(rightShoulder.y-middleArmRight.y)<15 &&
-		euclideanDist(middleArmRight, sp->rightHand)>50 )) {
-			printf("BRACO ESTICADO HORIZONTAL\n");
-		}*/
-		
-		
-		// TODO detectar profundidade dos ombros
-		int profRight = getMeanValue(depthMat, sp->rightShoulder);
-		int profLeft  = getMeanValue(depthMat, sp->leftShoulder);
-		//int profRight = getMeanValue(depthMat, sp->rightHand);
-		//int profLeft  = getMeanValue(depthMat, sp->leftHand);
-		
-		
-		int diff =  profRight - profLeft;
-		if (profRight>0 && profLeft>0) {
-			walkDirection = NONE;
-			if (diff > 50)
-				walkDirection = RIGHT;
-			else if (diff < -50)
-				walkDirection = LEFT;
-			if (walkDirection!=NONE)
-				walkDirectionQ[walkDirectionH++ % QUEUE_SIZE] = walkDirection;
-			walkDirection = getMedianaVector(walkDirectionQ);
-		}
-			
-
-		if (profRight>0 && profLeft>0) {
-			printf("profundidade ombros: %3d %3d %4d %s %s\n", profRight, profLeft, diff, diff > 0 ? "DIREITA" : "ESQUERDA",  walkDirection==RIGHT ? "DIREITA" : walkDirection==LEFT ? "ESQUERDA" : "NONE");
-		}
-return;
-
+//return;
 		// so entra a cada 10c para nao poluir muito o terminal	
 		//if (c%10==0)
 		{
@@ -216,24 +268,157 @@ return;
 				//printf("ANG::COTOVELO:: MAO ::%.1f\n\n", angElbow);
 			}
 
-			// TODO descomentar
-			//tiago->moveArmThread();
+
+			moveArmThread();
 		}
 
 	}
 
 	// so entra a cada 10c para nao poluir muito o terminal	
-	if (c%10==0)
+	//if (c%10==0)
 		// se a mao esquerda estiver mais a esquerda do que o ombro, e ambos estiverem acima da linha da cintura
 		if (sp->leftHand.x!=0 && sp->leftElbow.x!=0 && sp->leftHand.y < sp->center.y-afa && sp->leftElbow.y < sp->center.y )
 		{
 			if (sp->leftHand.x - sp->leftElbow.x < -25)
-				printf("andar para frente\n");
+				walkDirection = FRONT;
 			else if (sp->leftHand.x - sp->leftElbow.x > 20)
-				printf("andar para tras\n");
+				walkDirection = BACK;
+			else
+				walkDirection = NONE;
+			//printf("walkDirection::%5s\n", walkDirection==FRONT ? "FRENTE" : walkDirection==BACK ? "TRAS" : "NONE");
+				
+			float d1 = Skeleton::euclideanDist(sp->rightHand, closestCv);
+			float d2 = Skeleton::euclideanDist(sp->leftHand, closestCv);
+
+			walkAngle = -1;		
+			if (d1<70)
+				walkAngle = LEFT;
+			else if (d2<70)
+				walkAngle = RIGHT;
+			else
+				walkAngle = NONE;
+			
+			//if (walkAngle != -1)
+			//	walkAngleQ[walkAngleH++ % QUEUE_SIZE] = walkAngle;
+			//walkAngle = getModeVector(walkAngleQ);
+		
+			//printf("dists::%6.1f::%6.1f::%9s\n", d1, d2, walkAngle==RIGHT ? "DIREITA" : walkAngle==LEFT ? "ESQUERDA" : "NONE");
+			//printf("walkAngle::%9s\n\n", walkAngle==RIGHT ? "DIREITA" : walkAngle==LEFT ? "ESQUERDA" : "NONE");
+			
+			moveBase(walkDirection, walkAngle);
+
+			// TODO tentar descobrir porque essa forma nao esta funcionando.
+			//int profRight = getMeanValue(depthMat, sp->rightShoulder);
+			//int profLeft  = getMeanValue(depthMat, sp->leftShoulder);
+			//int profRight = getMeanValue(depthMat, sp->rightHand);
+			//int profLeft  = getMeanValue(depthMat, sp->leftHand);
+	
+			/*
+			int diff =  profRight - profLeft;
+			walkAngle = -1;
+			if (profRight>0 && profLeft>0) {
+				if (diff > 150)
+					walkAngle = RIGHT;
+				else if (diff < -150)
+					walkAngle = LEFT;
+				else
+					walkAngle = NONE;
+				
+				if (walkAngle != -1)
+					walkAngleQ[walkAngleH++ % QUEUE_SIZE] = walkAngle;
+				walkAngle = getModeVector(walkAngleQ);
+			}
+			if (walkAngle != -1) {
+				printf("profundidade: %4d %4d %5d %8s %8s\n", profRight, profLeft, diff, diff > 150 ? "DIREITA" : diff<-150 ? "ESQUERDA" : "NONE",  walkAngle==RIGHT ? "DIREITA" : walkAngle==LEFT ? "ESQUERDA" : "NONE");
+			}*/
 		}
 }
 
+void Tiago::moveBase(int walkDirection, int walkAngle) {
+	int r;
+	float ang = 0;
+	float dir = 0;
+	
+	char buff[2] = {(char)walkDirection, (char) walkAngle};
+	int ret = socketC->enviar(buff, 2);
+	if (r<0)
+		printf("Erro enviando socket");
+	return;
+	
+	// se for igual nao reenvia o comando.
+	if (lastWalkDirection == walkDirection && lastWalkAngle==walkAngle)
+		return;
+	
+	printf("walkDirection::%5s\n", walkDirection==FRONT ? "FRENTE" : walkDirection==BACK ? "TRAS" : "NONE");
+	printf("walkAngle::%9s\n\n", walkAngle==RIGHT ? "DIREITA" : walkAngle==LEFT ? "ESQUERDA" : "NONE");
+
+	systemThread("python scripts/parando.py");
+	
+	if (walkDirection==FRONT)
+		systemThread("python scripts/up.py");
+	else if (walkDirection==BACK)
+		systemThread("python scripts/down.py");
+	else if (walkAngle==RIGHT)
+		systemThread("python scripts/right.py");
+	else if (walkAngle==LEFT)
+		systemThread("python scripts/left.py");
+
+/*
+	// mata o processo anterior
+	systemThread("killall -9 rostopic");
+			
+	if (walkDirection==FRONT)
+		dir =  1.0;
+	if (walkDirection==BACK)
+		dir = -1.0;
+	if (walkAngle==RIGHT)
+		ang = -0.5;
+	if (walkAngle==LEFT)
+		ang =  0.5;
+	
+	if (dir!=0 || ang!=0) {
+		char * command = new char[300];
+		sprintf(command, "rostopic pub /mobile_base_controller/cmd_vel geometry_msgs/Twist -r 3 -- \'[%.1f, 0.0, 0.0]\' \'[0.0, 0.0, %.1f]\'", dir, ang);
+		//printf("moveBase::command::%s\n", (char*)command);
+		systemThread(command);
+	}*/
+	
+	lastWalkDirection = walkDirection;
+	lastWalkAngle = walkAngle;
+}
+
+
+
+void Tiago::systemThread(const char * command) {
+	int threadId = pthread_create( &thread2, NULL, &Tiago::systemThread2, (void *)command);
+}
+
+void * Tiago::systemThread2(void * command_) {
+	char * command = (char*)command_;
+	printf("systemThread2::command::%s\n", command);
+	int r;
+	r = system(command);
+	//if (command)
+	//	delete command;
+}
+
+
+/**
+ * Mode algorithm just for a 3 valued vector.
+ **/
+int Tiago::getModeVector(int vector[]) {
+	int histo[3]={0,0,0}; // NONE, RIGHT, LEFT
+
+	for (int i=0 ; i<QUEUE_SIZE ; i++)
+		histo[vector[i]]++;
+		
+	if (histo[0]>histo[1] && histo[0]>histo[2])
+		return 0;
+	else if (histo[1]>histo[0] && histo[1]>histo[2])
+		return 1;
+	else
+		return 2;
+}
 
 /**
  * Mediana
@@ -254,5 +439,6 @@ int Tiago::getMedianaVector(int vector[]) {
 
 	return m;
 }
+
 
 
