@@ -14,16 +14,18 @@ else
 	USED_LIBS +=
 endif
 
-USED_LIBS += OpenNI2 MWClosestPoint
+USED_LIBS += OpenNI2
 
 #if DEPTH camera like Orbbec Astra, or Asus Xtion add this flag DEPTH. If not comment the following line
 CFLAGS += -DDEPTH
 
 EXE_NAME = BodySkeletonTracker
+#LIB_NAME = BodySkeletonTracker
+#SLIB_NAME = BodySkeletonTracker
 
 #opencv
-CFLAGS += $(shell pkg-config --cflags opencv) -g -std=c++11 -pthread 
-LDFLAGS += $(shell pkg-config --libs --static opencv)
+CFLAGS += -g -std=c++11 
+LDFLAGS += $(shell pkg-config --libs --static opencv) -pthread 
 
 ifndef OPENNI2_INCLUDE
     $(error OPENNI2_INCLUDE is not defined. Please define it or 'source' the OpenNIDevEnvironment file from the installation)

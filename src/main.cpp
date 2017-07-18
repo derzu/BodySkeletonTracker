@@ -1,4 +1,4 @@
-#include "Viewer.h"
+#include "SampleViewer.h"
 
 int main(int argc, char** argv)
 {
@@ -20,11 +20,8 @@ printf("main::Compilado SEM Depth\n");
 	{
 		deviceURI = argv[1];
 	}*/
-
 	SampleViewer sampleViewer("Body Skeleton Tracker", deviceURI);
-
-	rc = sampleViewer.init(argc, argv);
-
+	rc = sampleViewer.init();
 #ifdef DEPTH
 	if (rc != openni::STATUS_OK)
 #else

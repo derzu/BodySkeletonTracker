@@ -34,14 +34,10 @@ void Skeleton::initialize() {
 	showSkeleton = false;
 
 	sp = new SkeletonPoints();
-	tiago = new Tiago();
 }
 
 
 Skeleton::~Skeleton() {
-	if (tiago)
-		delete tiago;
-
 	if (sp)
 		delete sp;
 }
@@ -571,7 +567,14 @@ void Skeleton::drawMarkers(Mat &frame) {
 
 
 void Skeleton::prepare(short depth[], closest_point::IntPoint3D& closest) {
-	tiago->detectTiagoCommands(sp, afa*subSample, depth, closest);
+	
+}
+
+
+void Skeleton::notifyListeners() {
+	for (std::vector<SkeletonListener*>::iterator it = listeners.begin(); it != listeners.end(); it++)
+		(*it)->onEvent(sp);
+	
 }
 
 /**

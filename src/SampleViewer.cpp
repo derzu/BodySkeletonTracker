@@ -1,4 +1,4 @@
-#include "Viewer.h"
+#include "SampleViewer.h"
 
 #include <math.h>
 #include <string.h>
@@ -78,7 +78,7 @@ void SampleViewer::finalize()
 #endif
 }
 
-int SampleViewer::init(int argc, char **argv)
+int SampleViewer::init()
 {
 	m_pTexMap = NULL;
 
@@ -246,6 +246,8 @@ void SampleViewer::display()
 
 		skel->drawMarkers(frame);
 		skel->prepare(depthMat, (closest_point::IntPoint3D&) closest);
+		
+		skel->notifyListeners();
 
 		if (skeleton)
 			delete skeleton;

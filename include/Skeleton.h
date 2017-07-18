@@ -4,8 +4,9 @@
 #include <opencv2/highgui.hpp>
 #include <vector>
 
-#include "Tiago.h"
 #include "SkeletonPoints.h"
+#include "SkeletonListener.h"
+#include "MWClosestPoint.h"
 
 class Skeleton {
     private:
@@ -36,8 +37,7 @@ class Skeleton {
 
 	bool showSkeleton;
 
-	// Pal-robotics Tiago
-	Tiago * tiago;
+	std::vector<SkeletonListener*> listeners;
 
     protected:
 	void initialize();
@@ -58,6 +58,7 @@ class Skeleton {
 	void locateMainBodyPoints(cv::Mat &frame);
 	void drawMarkers(cv::Mat &frame);
 	void prepare(short depth[], closest_point::IntPoint3D& closest);
+	void notifyListeners();
 	void drawOverFrame(cv::Mat * skelImg, cv::Mat &frame);
 	void drawOverFrame(std::vector<cv::Point> pontos, cv::Mat &frame);
 	cv::Mat * thinning01(cv::Mat &binarized);

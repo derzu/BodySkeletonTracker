@@ -1,5 +1,5 @@
-#ifndef VIEWER_H
-#define VIEWER_H
+#ifndef SAMPLEVIEWER_H
+#define SAMPLEVIEWER_H
 
 #include "Skeleton.h"
 
@@ -17,8 +17,8 @@ public:
 	SampleViewer(const char* strSampleName, const char* deviceUri);
 	virtual ~SampleViewer();
 
-	virtual int init(int argc, char **argv);
-	virtual int run();
+	 int init();
+	 int run();
 
 protected:
 	virtual void display();
