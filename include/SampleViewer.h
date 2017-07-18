@@ -11,6 +11,8 @@
 
 #endif
 
+#include "SkeletonListener.h"
+
 class SampleViewer
 {
 public:
@@ -19,6 +21,7 @@ public:
 
 	 int init();
 	 int run();
+	 void registerListener(SkeletonListener * listener);
 
 protected:
 	virtual void display();
@@ -28,6 +31,7 @@ protected:
 private:
 	SampleViewer(const SampleViewer&);
 	SampleViewer& operator=(SampleViewer&);
+	void notifyListeners(SkeletonPoints * sp, int afa);
 
 	static SampleViewer* ms_self;
 	
@@ -41,6 +45,9 @@ private:
 
 	// Detecta o esqueleto
 	Skeleton * skel;
+
+	// lista de listeners que receberao o esqueleto.	
+	std::vector<SkeletonListener*> listeners;
 
 #ifdef DEPTH
 	// OPENNI2

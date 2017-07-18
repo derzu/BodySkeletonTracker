@@ -247,7 +247,7 @@ void SampleViewer::display()
 		skel->drawMarkers(frame);
 		skel->prepare(depthMat, (closest_point::IntPoint3D&) closest);
 		
-		skel->notifyListeners();
+		notifyListeners(skel->getSkeletonPoints(), skel->getAfa());
 
 		if (skeleton)
 			delete skeleton;
@@ -259,6 +259,16 @@ void SampleViewer::display()
 		//imshow("Skeleton Traker", binarized2 );
 	}
 
+}
+
+
+void SampleViewer::notifyListeners(SkeletonPoints * sp, int afa) {
+	for (std::vector<SkeletonListener*>::iterator it = listeners.begin(); it != listeners.end(); it++)
+		(*it)->onEvent(sp, afa);
+}
+
+void SampleViewer::registerListener(SkeletonListener * listener) {
+	listeners.push_back(listener);
 }
 
 

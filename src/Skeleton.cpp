@@ -571,11 +571,6 @@ void Skeleton::prepare(short depth[], closest_point::IntPoint3D& closest) {
 }
 
 
-void Skeleton::notifyListeners() {
-	for (std::vector<SkeletonListener*>::iterator it = listeners.begin(); it != listeners.end(); it++)
-		(*it)->onEvent(sp);
-	
-}
 
 /**
  * Desenha os pontos==255 de uma matriz (skelImg) sobre outra matriz (frame).
@@ -1149,4 +1144,7 @@ SkeletonPoints* Skeleton::getSkeletonPoints() {
 	return sp;
 }
 
+int Skeleton::getAfa() {
+	return afa*subSample;
+}
 

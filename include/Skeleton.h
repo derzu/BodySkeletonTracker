@@ -5,7 +5,6 @@
 #include <vector>
 
 #include "SkeletonPoints.h"
-#include "SkeletonListener.h"
 #include "MWClosestPoint.h"
 
 class Skeleton {
@@ -37,8 +36,6 @@ class Skeleton {
 
 	bool showSkeleton;
 
-	std::vector<SkeletonListener*> listeners;
-
     protected:
 	void initialize();
 	void zeraMaximus();
@@ -66,6 +63,7 @@ class Skeleton {
 	void detectBiggerRegion(cv::Mat &frame);
 	std::vector<cv::Point> getSkeletonArm(cv::Mat * skeleton, bool right);
 	SkeletonPoints* getSkeletonPoints();
+	int getAfa();
 	void analyse(cv::Mat * skeleton);
 };
 

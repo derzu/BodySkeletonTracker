@@ -8,7 +8,7 @@ class SkeletonListener {
 	public:
 		SkeletonListener();
 		virtual ~SkeletonListener();
-		virtual void onEvent(SkeletonPoints * sp); //=0 TODO
+		virtual void onEvent(SkeletonPoints * sp, int afa)=0;
 };
 
 
