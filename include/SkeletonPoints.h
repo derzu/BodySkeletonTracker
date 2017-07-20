@@ -1,29 +1,34 @@
 #ifndef SKELETON_POINTS_H
 #define SKELETON_POINTS_H
 
-#include <opencv2/highgui.hpp>
+#include <Point3D.h>
 
 #define BUF_SIZE 5
 #define MAX_BODY_POINTS 8
 
+/**
+ * This class has all the Skeleton Body info with the main 3D Points.
+ * 
+ * @author derzu
+ * 
+ **/
 class SkeletonPoints {
 
 	public:
 		SkeletonPoints();
-		SkeletonPoints(cv::Point rightHand, cv::Point rightElbow, cv::Point rightShoulder, cv::Point leftHand, cv::Point leftElbow, cv::Point leftShoulder, cv::Point head);
 		void computePoint(int type);
 		static void quick_sort(int *a, int left, int right);
 
 		// Main body points
-		cv::Point rightHand, rightElbow, rightShoulder;
-		cv::Point leftHand,  leftElbow,  leftShoulder;
-		cv::Point head;
-		cv::Point center;
+		Point3D rightHand, rightElbow, rightShoulder;
+		Point3D leftHand,  leftElbow,  leftShoulder;
+		Point3D head;
+		Point3D center;
 
 		// pointer to the main body points
-		cv::Point * bodyPoints[MAX_BODY_POINTS];
+		Point3D * bodyPoints[MAX_BODY_POINTS];
 
-		// Main body points CONSTANTS values
+		// Main body points CONSTANTS TYPES values
 		static const int HEAD          = 0;
 		static const int RIGHT_HAND    = 1;
 		static const int RIGHT_ELBOW   = 2;
@@ -35,15 +40,15 @@ class SkeletonPoints {
 
 
 		// Main body points vectors (history)
-		cv::Point pointsV[MAX_BODY_POINTS][BUF_SIZE];
+		Point3D pointsV[MAX_BODY_POINTS][BUF_SIZE];
 
 		// Main body points vector heads (last elemment added)
 		unsigned char vHead[MAX_BODY_POINTS];
 	private:
 		void init();
-		int addToVector(int type, cv::Point *el);
-		cv::Point getMediaVector(int type);
-		cv::Point getMedianaVector(int type);
+		int addToVector(int type, Point3D *el);
+		Point3D getMeanVector(int type);
+		Point3D getMedianaVector(int type);
 
 
 

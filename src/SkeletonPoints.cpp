@@ -1,21 +1,19 @@
 #include "SkeletonPoints.h"
 
-SkeletonPoints::SkeletonPoints(cv::Point rightHand, cv::Point rightElbow, cv::Point rightShoulder, cv::Point leftHand, cv::Point leftElbow, cv::Point leftShoulder, cv::Point head) {
-	this->rightHand = rightHand;
-	this->rightElbow = rightElbow;
-	this->rightShoulder = rightShoulder;
+/**
+ * This class has all the Skeleton Body info with the main 3D Points.
+ * 
+ * @author derzu
+ * 
+ **/
+ 
+ 
 
-	this->leftHand = leftHand;
-	this->leftElbow = leftElbow;
-	this->leftShoulder = leftShoulder;
-
-	this->head = head;
-
-	init();
-}
-
+/**
+ * The constructor
+ **/
 SkeletonPoints::SkeletonPoints() {
-	cv::Point zero = cv::Point(0,0);
+	Point3D zero = Point3D(0,0);
 	this->rightHand = zero;
 	this->rightElbow = zero;
 	this->rightShoulder = zero;
@@ -39,12 +37,19 @@ void SkeletonPoints::init() {
 	bodyPoints[LEFT_SHOULDER]  = &leftShoulder;
 	bodyPoints[CENTER]         = &center;
 
-	bzero(pointsV,  sizeof(cv::Point)*MAX_BODY_POINTS*BUF_SIZE);
+	bzero(pointsV,  sizeof(Point3D)*MAX_BODY_POINTS*BUF_SIZE);
 	bzero(vHead,    MAX_BODY_POINTS);
 }
 
 
-int SkeletonPoints::addToVector(int type, cv::Point * el) {
+/**
+ * Add a point to a circular vector.
+ *
+ * @param type the type of the point. The types are declared at the .h file.
+ *
+ * @return 1 if sucess, -1 if error.
+ **/
+int SkeletonPoints::addToVector(int type, Point3D * el) {
 	if (type>MAX_BODY_POINTS || type<0)
 		return -1; // error
 
@@ -54,21 +59,29 @@ int SkeletonPoints::addToVector(int type, cv::Point * el) {
 }
 
 
-// TODO testar com a mediana
-cv::Point SkeletonPoints::getMediaVector(int type) {
-	cv::Point *vector = pointsV[type];
+/**
+ * Compute the mean point of a vector of 3D Points.
+ *
+ * @param type the type of the point. The types are declared at the .h file.
+ *
+ * @return the mean 3D Point.
+ **/
+Point3D SkeletonPoints::getMeanVector(int type) {
+	Point3D *vector = pointsV[type];
 
-	cv::Point m = cv::Point(0,0);
+	Point3D m = Point3D(0,0);
 	int q=0;
 	for (int i=0 ; i<BUF_SIZE ; i++) {
 		if (vector[i].x!=0) {
 			m.x += vector[i].x;
 			m.y += vector[i].y;
+			m.z += vector[i].z;
 			q++;
 		}
 	}
 	if (q>0) {
 		m.x /= q;
+		m.y /= q;
 		m.y /= q;
 	}
 
@@ -76,41 +89,58 @@ cv::Point SkeletonPoints::getMediaVector(int type) {
 }
 
 
+/**
+ * Add the point of the specified type to a history vector.
+ * Then change the value of the point to the Mean/Median of the vector of the last BUF_SIZE points. 
+ *
+ * @param type the type of the point. The types are declared at the .h file.
+ **/
 void SkeletonPoints::computePoint(int type) {
 	if (bodyPoints[type]->x!=0)
 		addToVector(type, bodyPoints[type]);
-	//*(bodyPoints[type]) = getMediaVector(type);
+	//*(bodyPoints[type]) = getMeanVector(type);
 	*(bodyPoints[type]) = getMedianaVector(type);
 }
 
-/**
- * Mediana
- **/
-cv::Point SkeletonPoints::getMedianaVector(int type) {
-	cv::Point *vector = pointsV[type];
-	int q1=0, q2=0;
-	cv::Point m = cv::Point(0,0);
 
-	// serpara o vetor de pontos em 2 vetores
-	int v1[BUF_SIZE], v2[BUF_SIZE];
+/**
+ * Compute the median point of a vector of 3D Points.
+ *
+ * @param type the type of the point. The types are declared at the .h file.
+ *
+ * @return the median 3D Point.
+ **/
+Point3D SkeletonPoints::getMedianaVector(int type) {
+	Point3D *vector = pointsV[type];
+	int q1=0, q2=0, q3=0;
+	Point3D m = Point3D(0,0);
+
+	// serpara o vetor de pontos em 3 vetores
+	int v1[BUF_SIZE], v2[BUF_SIZE], v3[BUF_SIZE];
 	for (int i=0 ; i<BUF_SIZE ; i++) {
 		v1[i] = vector[i].x;
 		v2[i] = vector[i].y;
+		v3[i] = vector[i].z;
 	}
 
 	quick_sort(v1, 0, BUF_SIZE);
 	quick_sort(v2, 0, BUF_SIZE);
+	quick_sort(v3, 0, BUF_SIZE);
 
 	for (int i=0 ; i<BUF_SIZE ; i++) {
 		if (v1[i]!=0)
 			q1++;
 		if (v2[i]!=0)
 			q2++;
+		if (v3[i]!=0)
+			q3++;
 	}
 	if (q1>0)
 		m.x = v1[q1/2+BUF_SIZE-q1];
 	if (q2>0)
 		m.y = v2[q2/2+BUF_SIZE-q2];
+	if (q3>0)
+		m.z = v3[q3/2+BUF_SIZE-q3];
 
 	return m;
 }

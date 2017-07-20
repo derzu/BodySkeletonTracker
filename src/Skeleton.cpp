@@ -18,6 +18,16 @@ using namespace cv;
 // - Pegar o ombro mais perto e o mais longe para dectear rotacao
 // - Decidir qual deteccao de ombro usar.
 
+/**
+ * This class process a frame and find the main skeleton points, that will be stored at a SkeletonPoints.
+ *
+ * @author derzu
+ **/
+
+
+/**
+ * The constructor
+ **/
 Skeleton::Skeleton(int width, int height, int subSample) {
 	this->width = width;
 	this->height = height;
@@ -42,9 +52,12 @@ Skeleton::~Skeleton() {
 		delete sp;
 }
 
+void Skeleton::setDepthMat(short depth[]) {
+	depthMat = depth;
+}
 
 /**
- * Calculate de Euclidian distance between 2 points.
+ * Calculate de Euclidian distance 2D between 2 points.
  **/
 float Skeleton::euclideanDist(cv::Point& p, cv::Point& q) {
 	if (p.x==q.x && p.y==q.y)
@@ -54,6 +67,22 @@ float Skeleton::euclideanDist(cv::Point& p, cv::Point& q) {
 }
 
 
+/**
+ * Calculate de Euclidian distance 3D between 2 points.
+ **/
+float Skeleton::euclideanDist3D(Point3D& p, Point3D& q) {
+	if (p.x==q.x && p.y==q.y)
+		return 0;
+	return cv::sqrt( (p.x-q.x)*(p.x-q.x) + (p.x-q.x)*(p.x-q.x) + (p.y-q.y)*(p.z-q.z) );
+}
+
+
+/**
+ * Locate some interesting points on the skeleton region:
+ * The max right, max left, max bottom, maxtop.
+ *
+ * @param frame frame where the maximuns will be found.
+ **/
 void Skeleton::locateMaximus(cv::Mat *frame) {
 	int width = frame->cols;
 	int height = frame->rows;
@@ -72,43 +101,51 @@ void Skeleton::locateMaximus(cv::Mat *frame) {
 				if (x>=right.x) {
 					right.x = x;
 					right.y = y;
+					obtainZ(right);
 				}
 				if (x<left.x) {
 					left.x = x;
 					left.y = y;
+					obtainZ(left);
 				}
 				if (x>=centerWs-afa && x<=centerWs+afa) {
 					if (y<topCenter.y) {
 						topCenter.x = x;
 						topCenter.y = y;
+						obtainZ(topCenter);
 					}
 					if (y>bottomCenter.y) {
 						bottomCenter.x = x;
 						bottomCenter.y = y;
+						obtainZ(bottomCenter);
 					}
 				}
 				if (x>centerWs+afa*1.2) {
 					if (y<=topRight.y) {
 						topRight.x = x;
 						topRight.y = y;
+						obtainZ(topRight);
 					}
 				}
 				if (x>centerWs+afa*1.3) {
 					if (y>=bottomRight.y) {
 						bottomRight.x = x;
 						bottomRight.y = y;
+						obtainZ(bottomRight);
 					}
 				}
 				if (x<centerWs-afa*1.2) {
 					if (y<topLeft.y) {
 						topLeft.x = x;
 						topLeft.y = y;
+						obtainZ(topLeft);
 					}
 				}
 				if (x<centerWs-afa*1.3) {
 					if (y>bottomLeft.y) {
 						bottomLeft.x = x;
 						bottomLeft.y = y;
+						obtainZ(bottomLeft);
 					}
 				}
 			}
@@ -128,6 +165,8 @@ void Skeleton::locateMaximus(cv::Mat *frame) {
 /**
  * Localiza os ombros, tecnica bem simples. Pega a posicao X da cabeca adiciona +-afa e baixa o Y ate chegar em algum ponto valido
  * Deve receber como parametro a imagem binarizada e nao o esqueleto.
+ *
+ * @param frame frame where the Shoulders will be found.
  **/
 void Skeleton::locateShoulders(cv::Mat &frame) {
 	int width = frame.cols;
@@ -150,6 +189,7 @@ void Skeleton::locateShoulders(cv::Mat &frame) {
 			nAchou1 = 0;
 			sp->rightShoulder.x = (centerWs+aff)*subSample;
 			sp->rightShoulder.y = (y+10)*subSample; // adiciona 10 ao Y para ir para dentro do braco, nao ficar no ponto da borda.
+			obtainZ(sp->rightShoulder);
 			sp->computePoint(SkeletonPoints::RIGHT_SHOULDER);
 
 			if (!nAchou2) break;
@@ -159,6 +199,7 @@ void Skeleton::locateShoulders(cv::Mat &frame) {
 			nAchou2 = 0;
 			sp->leftShoulder.x = (centerWs-aff)*subSample;
 			sp->leftShoulder.y = (y+10)*subSample; // adiciona 10 ao Y para ir para dentro do braco, nao ficar no ponto da borda.
+			obtainZ(sp->leftShoulder);
 			sp->computePoint(SkeletonPoints::LEFT_SHOULDER);
 
 			if (!nAchou1) break;
@@ -202,54 +243,72 @@ void Skeleton::zeraMaximus() {
 	middleStraightArmLeft.x = 0;
 }
 
+/**
+ * After locate de maximus, they are stored at anothers variables.
+ * Also set the middleStraightArm point.
+ *
+ * @see locateMaximus()
+ **/
 void Skeleton::setMaximus() {
 	if (right.y>0) {
 		maxRight.x = right.x*subSample;
 		maxRight.y = right.y*subSample;
+		maxRight.z = right.z;
 	}
 	if (left.y>0) {
 		maxLeft.x = left.x*subSample;
 		maxLeft.y = left.y*subSample;
+		maxLeft.z = left.z;
 	}
 	if (topCenter.x>0)
 	{
 		maxTopCenter.x = topCenter.x*subSample;
 		maxTopCenter.y = topCenter.y*subSample;
+		maxTopCenter.z = topCenter.z;
 	}
 	if (topRight.x>0)
 	{
 		maxTopRight.x = topRight.x*subSample;
 		maxTopRight.y = topRight.y*subSample;
+		maxTopRight.z = topRight.z;
 	}
 	if (topLeft.x>0)
 	{
 		maxTopLeft.x = topLeft.x*subSample;
 		maxTopLeft.y = topLeft.y*subSample;
+		maxTopLeft.z = topLeft.z;
 	}
 	if (bottomCenter.x>0) {
 		maxBottomCenter.x = bottomCenter.x*subSample;
 		maxBottomCenter.y = bottomCenter.y*subSample;
+		maxBottomCenter.z = bottomCenter.z;
 	}
 	if (bottomRight.x>0) {
 		maxBottomRight.x = bottomRight.x*subSample;
 		maxBottomRight.y = bottomRight.y*subSample;
+		maxBottomRight.z = bottomRight.z;
 	}
 	if (bottomLeft.x>0) {
 		maxBottomLeft.x = bottomLeft.x*subSample;
 		maxBottomLeft.y = bottomLeft.y*subSample;
+		maxBottomLeft.z = bottomLeft.z;
 	}
 	if (maxRight.x>0 && maxBottomRight.x>0) {
 			// add 5 para ficar mais para dentro do braco
-		maxRightMaxBottom = Point(maxRight.x-10, maxBottomRight.y);
+		maxRightMaxBottom = Point3D(maxRight.x-10, maxBottomRight.y);
+		obtainZ(maxRightMaxBottom);
 	}
 	if (maxLeft.x>0 && maxBottomLeft.x>0) {
-		maxLeftMaxBottom = Point(maxLeft.x+10, maxBottomLeft.y);
+		maxLeftMaxBottom = Point3D(maxLeft.x+10, maxBottomLeft.y);
+		obtainZ(maxLeftMaxBottom);
 	}
 	if (sp->rightHand.x>0 && sp->rightShoulder.x>0) {
-		middleStraightArmRight = Point((sp->rightHand.x+sp->rightShoulder.x)/2, (sp->rightHand.y+sp->rightShoulder.y)/2); // braco esticado
+		middleStraightArmRight = Point3D((sp->rightHand.x+sp->rightShoulder.x)/2, (sp->rightHand.y+sp->rightShoulder.y)/2); // braco esticado
+		obtainZ(middleStraightArmRight);
 	}
 	if (sp->leftHand.x>0 && sp->leftShoulder.x>0) {
-		middleStraightArmLeft = Point((sp->leftHand.x+sp->leftShoulder.x)/2, (sp->leftHand.y+sp->leftShoulder.y)/2); // braco esticado
+		middleStraightArmLeft = Point3D((sp->leftHand.x+sp->leftShoulder.x)/2, (sp->leftHand.y+sp->leftShoulder.y)/2); // braco esticado
+		obtainZ(middleStraightArmLeft);
 	}
 
 	//sp->center.x = maxLeft.x + (maxRight.x-maxLeft.x)/2;
@@ -257,6 +316,14 @@ void Skeleton::setMaximus() {
 		   maxTopRight.y  + (maxBottomRight.y-maxTopRight.y)/2 + 
 		   maxTopLeft.y   + (maxBottomLeft.y-maxTopLeft.y)/2 ) / 3;
 */
+}
+
+/**
+ * A partir da posicao xy o ponto z eh buscado na matriz de profundiade.
+ *
+ **/
+void Skeleton::obtainZ(Point3D &point) {
+	point.z = getMeanDepthValue(point);
 }
 
 /**
@@ -450,7 +517,13 @@ void Skeleton::locateMainBodyPoints(cv::Mat &frame) {
 
 
 
-
+/**
+ * Draw the markers of the body skeleton.
+ *
+ * @param frame the frame where the markers will be drawn.
+ *
+ * @author derzu
+ **/
 void Skeleton::drawMarkers(Mat &frame) {
 	static int draws = 0;
 
@@ -566,7 +639,7 @@ void Skeleton::drawMarkers(Mat &frame) {
 }
 
 
-void Skeleton::prepare(short depth[], closest_point::IntPoint3D& closest) {
+void Skeleton::prepare(short depth[], Point3D* closest) {
 	
 }
 
@@ -574,6 +647,7 @@ void Skeleton::prepare(short depth[], closest_point::IntPoint3D& closest) {
 
 /**
  * Desenha os pontos==255 de uma matriz (skelImg) sobre outra matriz (frame).
+ *
  * @param skelImg Matriz cujos de pontos serao desenhados em frame
  * @param frame Matriz onde os pontos serao desenhados.
  **/
@@ -602,14 +676,15 @@ void Skeleton::drawOverFrame(Mat * skelImg, Mat &frame) {
 
 /**
  * Desenha o vetor de pontos sobre a matriz (frame).
+ *
  * @param pontos vetor com os pontos que serao desenhados em frame
  * @param frame Matriz onde os pontos serao desenhados.
  **/
-void Skeleton::drawOverFrame(std::vector<cv::Point> pontos, Mat &frame) {
+void Skeleton::drawOverFrame(std::vector<Point3D> pontos, Mat &frame) {
 	Scalar cor = Scalar(0,255,255);
-	Point p;
+	Point3D p;
 
-	for (std::vector<Point>::iterator it = pontos.begin(); it != pontos.end(); ++it) {
+	for (std::vector<Point3D>::iterator it = pontos.begin(); it != pontos.end(); ++it) {
 		p = *it;
 		circle(frame, Point(p.x*subSample, p.y*subSample), 1, cor, 2, 8, 0);
 	}
@@ -661,6 +736,7 @@ void Skeleton::detectBiggerRegion(Mat &frame) {
 	sp->center = mediaPoint(&frame);
 	sp->center.x *= subSample;
 	sp->center.y *= subSample;
+	obtainZ(sp->center);
 	//sp->center.y = sp->head.y + ((sp->rightShoulder.y+sp->leftShoulder.y)/2 - sp->head.y)*2;
 	//centerHV[centerHHead++ % BUF_SIZE] = sp->center.y;
 	//sp->center.y = calculaMedia(centerHV);
@@ -707,11 +783,11 @@ void Skeleton::analyse(cv::Mat * skeleton) {
  * 
  * @return O ponto que tem os valores da medias x e y.
  **/
-cv::Point Skeleton::mediaPoint(Mat * frame) {
+Point3D Skeleton::mediaPoint(Mat * frame) {
 	int w = frame->cols;
 	int h = frame->rows;
 	int x, y;
-	Point media = Point(0, 0);
+	Point3D media = Point3D(0, 0);
 	int c=1;
 
 	for (y=0 ; y<h ; y++) {
@@ -731,15 +807,15 @@ cv::Point Skeleton::mediaPoint(Mat * frame) {
 }
 
 
-// so entra aqui se o ponto mais a direita e o mais baixo tiverem o y proximos, Ou o mais a esquerda e o mais baixo.
+
 
 /**
  * Localiza um possivel ponto do cotovelo a partir dos pontos do braco
  * @param arm braco do esquelto
  * @return o ponto na curva do esquelto do braco
  **/
-cv::Point * Skeleton::getElbowHard(std::vector<cv::Point> &arm, int ang) {
-	cv::Point * p = NULL;
+Point3D * Skeleton::getElbowHard(std::vector<Point3D> &arm, int ang) {
+	Point3D * p = NULL;
 
 	// calcula as declividades
 	double ang1, ang2=0, ang3=0, diff;
@@ -778,7 +854,7 @@ cv::Point * Skeleton::getElbowHard(std::vector<cv::Point> &arm, int ang) {
 			if (ang1==ang2 && ang2==ang3 && i>5 &&
 			(((ang1==0  || ang1==-90 || /*ang1==90 ||*/ ang1==180 || ang1==47) && ang==-1) || 
 			 ((ang1==45 || ang1==-45 || ang1==-135 || ang1==135) && ang!=-1) ) ) {
-				p = new Point(arm[i].x*subSample, arm[i].y*subSample);
+				p = new Point3D(arm[i].x*subSample, arm[i].y*subSample);
 				break;
 			}
 
@@ -800,16 +876,16 @@ cv::Point * Skeleton::getElbowHard(std::vector<cv::Point> &arm, int ang) {
  * @param skeleton matriz de ponstos com o esqueleto
  * @param right se verdadeiro busca pelo braco direito, falso pelo esquerdo.
  *
- * @return vetor de cv::Point com os pontos do braco
+ * @return vetor de Point3D com os pontos do braco
  **/
-std::vector<cv::Point> Skeleton::getSkeletonArm(Mat * skeleton, bool right) {
+std::vector<Point3D> Skeleton::getSkeletonArm(Mat * skeleton, bool right) {
 	int w = skeleton->cols;
 	int h = skeleton->rows;
 	int x, y;
-	std::list<cv::Point> pontos;
-	std::vector<cv::Point> pontos_ordered;
-	std::vector<cv::Point> pontos_ordered_smoth;
-	Point p;
+	std::list<Point3D> pontos;
+	std::vector<Point3D> pontos_ordered;
+	std::vector<Point3D> pontos_ordered_smoth;
+	Point3D p;
 
 	int centerWs = sp->center.x/subSample;
 	int ini = centerWs-afa*1.2, fim = 0;
@@ -824,18 +900,18 @@ std::vector<cv::Point> Skeleton::getSkeletonArm(Mat * skeleton, bool right) {
 	for (x=ini ; x!=fim ; ) {
 		for (y=0 ; y<h ; y++) {
 			if (skeleton->data[y*w+x]==255) {
-				p = Point(x, y);
+				p = Point3D(x, y);
 				pontos.push_back(p);
 			}
 		}
 		right ? x++ : x--;
 	}
 
-	Point first;
+	Point3D first;
 	float dist;
 	float menorDist;
-	std::list<Point>::iterator closest;
-	Point closestP;
+	std::list<Point3D>::iterator closest;
+	Point3D closestP;
 	int tam = 0;
 	
 	// Ordena os pontos
@@ -844,10 +920,10 @@ std::vector<cv::Point> Skeleton::getSkeletonArm(Mat * skeleton, bool right) {
 		pontos_ordered.push_back(pontos.front());
 		pontos.erase(pontos.begin());
 		while (tam!=pontos.size()) {
-			Point first = pontos_ordered.back();
+			Point3D first = pontos_ordered.back();
 			menorDist = 999999;
 			tam = pontos.size();
-			std::list<Point>::iterator it;
+			std::list<Point3D>::iterator it;
 			for (it = pontos.begin(); it != pontos.end(); ++it) {
 				dist = euclideanDist(first, *it);
 				if (dist<menorDist && dist<10) {
@@ -869,10 +945,10 @@ std::vector<cv::Point> Skeleton::getSkeletonArm(Mat * skeleton, bool right) {
 
 
 	// Suaviza braco. Aplica uma mascara de media em formato de + de tamanho 7x7
-	Point m;
+	Point3D m;
 	int q;
 	for (int i=0; i<pontos_ordered.size() ; i++) {
-		m = Point(0,0);
+		m = Point3D(0,0);
 		q = 1;
 		if (i-3>=0) {
 			m.x += pontos_ordered[i-3].x;
@@ -911,7 +987,7 @@ std::vector<cv::Point> Skeleton::getSkeletonArm(Mat * skeleton, bool right) {
 		pontos_ordered_smoth.push_back(m);
 	}
 
-	cv::Point * el = getElbowHard(pontos_ordered_smoth, -1);
+	Point3D * el = getElbowHard(pontos_ordered_smoth, -1);
 	if (el) {
 		if (right) {
 			middleArmRight = *el;
@@ -938,8 +1014,16 @@ std::vector<cv::Point> Skeleton::getSkeletonArm(Mat * skeleton, bool right) {
 }
 
 
+/**
+ * Clear a 8-Connected region with the point specified by the params xy. 
+ * All the region must be with the 255 value and will be replaced by 0.
+ * Keep doint that on the 8-Connected neighborhood recursively.
+ * 
+ * @param frame the imagem frame
+ * @param x coordinate of the point
+ * @param y coordinate of the point
+ **/
 void Skeleton::clearRegion(unsigned char * frame, int x, int y) {
-//printf("aqui3 %d %d\n", x, y);
 	if (x<wC && y<hC && frame[y*wC+x]==255) {
 		frame[y*wC+x]=0;
 		clearRegion(frame, x-1, y-1);
@@ -953,9 +1037,19 @@ void Skeleton::clearRegion(unsigned char * frame, int x, int y) {
 	}
 }
 
+
+/**
+ * Get the size of a 8-Connected region with the point specified by the params xy. 
+ * All the region must be with the 255 value and will be replaced by 0.
+ * Keep doint that on the 8-Connected neighborhood recursively.
+ * 
+ * @param frame the imagem frame
+ * @param x coordinate of the point
+ * @param y coordinate of the point
+ * @param quant the result (size of the region) will be stored here.
+ **/
 void Skeleton::getSizeRegion(unsigned char * frame, int x, int y, int *quant) {
 	if (x<wC && y<hC && frame[y*wC+x]==255) {
-//printf("aqui4 %d %d %d\n", x, y, *quant);
 		frame[y*wC+x]=0;
 		(*quant)++;
 		getSizeRegion(frame, x-1, y-1, quant);
@@ -1147,4 +1241,84 @@ SkeletonPoints* Skeleton::getSkeletonPoints() {
 int Skeleton::getAfa() {
 	return afa*subSample;
 }
+
+
+/**
+ * Pega o valor medio de uma regiao 5x5 circundando o ponto x,y. Pontos com valor zero nao sao considerados
+ *
+ * @param center point of the region.
+ **/
+int Skeleton::getMeanDepthValue(cv::Point& p) {
+	int v;
+	int q=0;
+	int t=0;
+	int w = 640;
+	int h = 480;
+	
+	if (p.x<w-2 && p.x>1 && p.y>1 && p.y<w-2) {
+		v = depthMat[(p.y-2)*w + (p.x-2)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y-2)*w + (p.x-1)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y-2)*w +  p.x];    
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y-2)*w + (p.x+1)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y-2)*w + (p.x+2)];
+		if (v) { t += v; q++; }
+	
+		v = depthMat[(p.y-1)*w + (p.x-2)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y-1)*w + (p.x-1)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y-1)*w +  p.x];    
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y-1)*w + (p.x+1)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y-1)*w + (p.x+2)];
+		if (v) { t += v; q++; }
+
+		v = depthMat[(p.y)*w + (p.x-2)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y)*w + (p.x-1)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y)*w +  p.x];    
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y)*w + (p.x+1)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y)*w + (p.x+2)];
+		if (v) { t += v; q++; }
+
+		v = depthMat[(p.y+1)*w + (p.x-2)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y+1)*w + (p.x-1)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y+1)*w +  p.x];    
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y+1)*w + (p.x+1)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y+1)*w + (p.x+2)];
+		if (v) { t += v; q++; }
+
+		v = depthMat[(p.y+2)*w + (p.x-2)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y+2)*w + (p.x-1)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y+2)*w +  p.x];    
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y+2)*w + (p.x+1)];
+		if (v) { t += v; q++; }
+		v = depthMat[(p.y+2)*w + (p.x+2)];
+		if (v) { t += v; q++; }
+		
+	}
+	
+	if (q>0) {
+		//printf("v9::%d::%d::%d::%.1f\n", t, q, t/q, (float)t/(float)q);
+		return t/q;
+	}
+	else
+		return t;
+}
+
 

@@ -7,7 +7,7 @@
 #ifdef DEPTH
 
 #include "SkeletonDepth.h"
-#include "MyMwListener.h"
+#include <OpenNI.h>
 
 #endif
 
@@ -32,12 +32,15 @@ private:
 	SampleViewer(const SampleViewer&);
 	SampleViewer& operator=(SampleViewer&);
 	void notifyListeners(SkeletonPoints * sp, int afa);
+	int initOpenNI(const char* deviceUri);
+	openni::VideoFrameRef * getNextFrame();
+	Point3D* getClosestPoint(openni::VideoFrameRef *frame);
 
 	static SampleViewer* ms_self;
 	
 	char			m_strSampleName[50];
-	unsigned int		m_nTexMapX;
-	unsigned int		m_nTexMapY;
+	unsigned int		width;
+	unsigned int		height;
 	int subSample;
 	long frameCount;
 
@@ -53,8 +56,11 @@ private:
 	// OPENNI2
 	SkeletonDepth * skelD;
 
-	closest_point::ClosestPoint* m_pClosestPoint;
-	MyMwListener* m_pClosestPointListener;
+	//closest_point::ClosestPoint* m_pClosestPoint;
+	//MyMwListener* m_pClosestPointListener;
+	
+	openni::VideoStream depth;
+	openni::Device device;
 #else
 	// OPENCV
 	cv::VideoCapture capture;

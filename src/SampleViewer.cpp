@@ -12,13 +12,18 @@
 using namespace cv;
 using namespace std;
 
+#ifdef DEPTH
+#define SAMPLE_READ_WAIT_TIMEOUT 2000 //2000ms
+using namespace openni;
+#endif
+
 SampleViewer* SampleViewer::ms_self = NULL;
 
 SampleViewer::SampleViewer(const char* strSampleName, const char* deviceUri)
 {
 #ifdef DEPTH
-	m_pClosestPointListener = NULL;
-	m_pClosestPoint = new closest_point::ClosestPoint(deviceUri);
+	initOpenNI(deviceUri);
+	
 	skelD = NULL;
 #else
     if( deviceUri==NULL )
@@ -44,6 +49,100 @@ SampleViewer::SampleViewer(const char* strSampleName, const char* deviceUri)
 	subSample = 2;
 	frameCount = 0;
 }
+
+
+int SampleViewer::initOpenNI(const char* deviceUri) {
+	Status rc = OpenNI::initialize();
+	if (rc != STATUS_OK)
+	{
+		printf("Initialize failed\n%s\n", OpenNI::getExtendedError());
+		return 1;
+	}
+
+	rc = device.open(deviceUri);
+	if (rc != STATUS_OK)
+	{
+		printf("Couldn't open device\n%s\n", OpenNI::getExtendedError());
+		return 2;
+	}
+
+	if (device.getSensorInfo(SENSOR_DEPTH) != NULL)
+	{
+		rc = depth.create(device, SENSOR_DEPTH);
+		if (rc != STATUS_OK)
+		{
+			printf("Couldn't create depth stream\n%s\n", OpenNI::getExtendedError());
+			return 3;
+		}
+	}
+
+	rc = depth.start();
+	if (rc != STATUS_OK)
+	{
+		printf("Couldn't start the depth stream\n%s\n", OpenNI::getExtendedError());
+		return 4;
+	}
+}
+
+
+/**
+ * Ler o proximo frame e o retorna.
+ **/
+VideoFrameRef * SampleViewer::getNextFrame() {
+	int changedStreamDummy;
+	VideoStream* pStream = &depth;
+	int rc = OpenNI::waitForAnyStream(&pStream, 1, &changedStreamDummy, SAMPLE_READ_WAIT_TIMEOUT);
+	if (rc != STATUS_OK)
+	{
+		printf("Wait failed! (timeout is %d ms)\n%s\n", SAMPLE_READ_WAIT_TIMEOUT, OpenNI::getExtendedError());
+		return NULL;
+	}
+	
+	openni::VideoFrameRef *frame = new VideoFrameRef();
+	rc = depth.readFrame(frame);
+	if (rc != STATUS_OK)
+	{
+		printf("Read failed!\n%s\n", OpenNI::getExtendedError());
+		return NULL;
+	}
+
+	if (frame->getVideoMode().getPixelFormat() != PIXEL_FORMAT_DEPTH_1_MM && frame->getVideoMode().getPixelFormat() != PIXEL_FORMAT_DEPTH_100_UM)
+	{
+		printf("Unexpected frame format\n");
+		return NULL;
+	}
+
+	return frame;
+}
+
+Point3D* SampleViewer::getClosestPoint(openni::VideoFrameRef *frame) {
+	Point3D *closestPoint = new Point3D();
+	DepthPixel* pDepth = (DepthPixel*)frame->getData();
+	bool found = false;
+	closestPoint->z = 0xffff;
+	int width = frame->getWidth();
+	int height = frame->getHeight();
+
+	for (int y = 0; y < height; ++y)
+		for (int x = 0; x < width; ++x, ++pDepth)
+		{
+			if (*pDepth < closestPoint->z && *pDepth != 0)
+			{
+				closestPoint->x = x;
+				closestPoint->y = y;
+				closestPoint->z = *pDepth;
+				found = true;
+			}
+		}
+
+	if (!found)
+	{
+		return NULL;
+	}
+
+	return closestPoint;
+}
+
 SampleViewer::~SampleViewer()
 {
 	finalize();
@@ -64,17 +163,10 @@ SampleViewer::~SampleViewer()
 void SampleViewer::finalize()
 {
 #ifdef DEPTH
-	if (m_pClosestPoint)
-	{
-		m_pClosestPoint->resetListener();
-		delete m_pClosestPoint;
-		m_pClosestPoint = NULL;
-	}
-	if (m_pClosestPointListener)
-	{
-		delete m_pClosestPointListener;
-		m_pClosestPointListener = NULL;
-	}
+	depth.stop();
+	depth.destroy();
+	device.close();
+	OpenNI::shutdown();
 #endif
 }
 
@@ -82,21 +174,9 @@ int SampleViewer::init()
 {
 	m_pTexMap = NULL;
 
-#ifdef DEPTH
-	if (!m_pClosestPoint->isValid())
-	{
-		return openni::STATUS_ERROR;
-	}
-
-	m_pClosestPointListener = new MyMwListener;
-	m_pClosestPoint->setListener(*m_pClosestPointListener);
-
-	return openni::STATUS_OK;
-#else
 	return 0;
-#endif
-
 }
+
 int SampleViewer::run()	//Does not return
 {
 #ifdef DEPTH
@@ -126,16 +206,11 @@ void SampleViewer::display()
 {
 	int sizePixel = 3;
 #ifdef DEPTH
-	sizePixel = sizeof(openni::RGB888Pixel);
-	if (!m_pClosestPointListener->isAvailable())
-	{
+	openni::VideoFrameRef * srcFrame = getNextFrame();
+	if (srcFrame==NULL)
 		return;
-	}
-	
-	// depthFrame
-	openni::VideoFrameRef srcFrame = m_pClosestPointListener->getFrame();
-	const closest_point::IntPoint3D& closest = m_pClosestPointListener->getClosestPoint();
-	m_pClosestPointListener->setUnavailable();
+	Point3D * closest = getClosestPoint(srcFrame);
+
 #else
 	Mat srcFrame;
 	srcFrame.data = NULL;
@@ -160,26 +235,26 @@ void SampleViewer::display()
 	if (m_pTexMap == NULL)
 	{
 		// Texture map init
-		m_nTexMapX = srcFrame.getWidth();
-		m_nTexMapY = srcFrame.getHeight();
+		width = srcFrame->getWidth();
+		height = srcFrame->getHeight();
 #else
-	if (m_pTexMap == NULL && srcFrame.data!=NULL)
+	if (m_pTexMap == NULL && srcFrame->data!=NULL)
 	{
 		// TODO pegar da webcam opencv
-		m_nTexMapX = srcFrame.cols;
-		m_nTexMapY = srcFrame.rows;
+		width = srcFrame.cols;
+		height = srcFrame.rows;
 #endif
-//printf("w x h = %d x %d\n", m_nTexMapX, m_nTexMapY);
-		m_pTexMap = new unsigned char[m_nTexMapX * m_nTexMapY * sizePixel];
+//printf("w x h = %d x %d\n", width, height);
+		m_pTexMap = new unsigned char[width * height * sizePixel];
 
-		skel = new Skeleton(m_nTexMapX, m_nTexMapY, subSample);
+		skel = new Skeleton(width, height, subSample);
 #ifdef DEPTH
-		skelD = new SkeletonDepth(m_nTexMapX, m_nTexMapY, subSample);
+		skelD = new SkeletonDepth(width, height, subSample);
 #endif
 		cvNamedWindow("Skeleton Traker", CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO | CV_GUI_EXPANDED);
 		//cvSetWindowProperty("Skeleton Traker", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
-		//resizeWindow("Skeleton Traker", m_nTexMapX*2, m_nTexMapY*2);
-		resizeWindow("Skeleton Traker", m_nTexMapX, m_nTexMapY);
+		//resizeWindow("Skeleton Traker", width*2, height*2);
+		resizeWindow("Skeleton Traker", width, height);
 	}
 
 //printf("sizeof(openni::RGB888Pixel)=%ld\n", sizeof(openni::RGB888Pixel) );
@@ -188,26 +263,28 @@ void SampleViewer::display()
 
 	// check if we need to draw depth frame to texture
 #ifdef DEPTH
-	if (srcFrame.isValid())
+	if (srcFrame->isValid())
 	{
-		Mat binarized(cv::Size(m_nTexMapX/subSample, m_nTexMapY/subSample), CV_8UC1, cv::Scalar(0));
-		short depthMat[m_nTexMapX*m_nTexMapY*sizeof(short)];
-		bzero(depthMat, m_nTexMapX*m_nTexMapY*sizeof(short));
+		Mat binarized(cv::Size(width/subSample, height/subSample), CV_8UC1, cv::Scalar(0));
+		short depthMat[width*height*sizeof(short)];
+		bzero(depthMat, width*height*sizeof(short));
 
-		memset(m_pTexMap, 0, m_nTexMapX*m_nTexMapY*sizeof(openni::RGB888Pixel));
+		memset(m_pTexMap, 0, width*height*sizeof(openni::RGB888Pixel));
 
 		skelD->prepareAnalisa(closest);
 		//colore e obtem a imagem binarizada
-		skelD->paintDepthCopy((openni::RGB888Pixel*)m_pTexMap, srcFrame, binarized, depthMat);
+		skelD->paintDepthCopy((openni::RGB888Pixel*)m_pTexMap, *srcFrame, binarized, depthMat);
+		
+		skel->setDepthMat(depthMat);
 
 		// Converte o openni::VideoFrameRef (srcFrame) para um cv::Mat (frame)
-		Mat frame = Mat(Size(m_nTexMapX, m_nTexMapY), CV_8UC3);
-		memcpy(frame.data, m_pTexMap, m_nTexMapX*m_nTexMapY*sizePixel);
+		Mat frame = Mat(Size(width, height), CV_8UC3);
+		memcpy(frame.data, m_pTexMap, width*height*sizePixel);
 #else
 	if( srcFrame.data != NULL )
 	{
-		Mat binarizedFirst(cv::Size(m_nTexMapX/subSample, m_nTexMapY/subSample), CV_8UC1, cv::Scalar(0));
-		Mat binarized     (cv::Size(m_nTexMapX/subSample, m_nTexMapY/subSample), CV_8UC1, cv::Scalar(0));
+		Mat binarizedFirst(cv::Size(width/subSample, height/subSample), CV_8UC1, cv::Scalar(0));
+		Mat binarized     (cv::Size(width/subSample, height/subSample), CV_8UC1, cv::Scalar(0));
 
 		cv::resize(srcFrame, binarizedFirst, binarizedFirst.size());
 
@@ -224,18 +301,11 @@ void SampleViewer::display()
 		Mat binarizedCp = binarized.clone();
 		skel->detectBiggerRegion(binarized);
 
-		//Mat binarized2    (cv::Size(m_nTexMapX/subSample, m_nTexMapY/subSample), CV_8UC1, cv::Scalar(0));
-		//Mat binarizedFirst(cv::Size(m_nTexMapX/subSample, m_nTexMapY/subSample), CV_8UC1, cv::Scalar(0));
-		//cv::resize(frame, binarizedFirst, binarizedFirst.size());
-		//Canny(binarizedFirst, binarized2, 50, 200, 3);
-		//Canny(binarized, binarized2, 50, 200, 3);
-
-
 		Mat * skeleton = skel->thinning02(binarized);
 		skel->analyse(skeleton);
 
-		std::vector<cv::Point> bdireito = skel->getSkeletonArm(skeleton, true);
-		std::vector<cv::Point> besquerdo= skel->getSkeletonArm(skeleton, false);
+		std::vector<Point3D> bdireito = skel->getSkeletonArm(skeleton, true);
+		std::vector<Point3D> besquerdo= skel->getSkeletonArm(skeleton, false);
 
 		skel->locateMainBodyPoints(binarizedCp);
 
@@ -245,7 +315,7 @@ void SampleViewer::display()
 		//skel->drawOverFrame(&binarizedCp, frame);
 
 		skel->drawMarkers(frame);
-		skel->prepare(depthMat, (closest_point::IntPoint3D&) closest);
+		skel->prepare(depthMat, closest);
 		
 		notifyListeners(skel->getSkeletonPoints(), skel->getAfa());
 
@@ -259,6 +329,10 @@ void SampleViewer::display()
 		//imshow("Skeleton Traker", binarized2 );
 	}
 
+	if (srcFrame)
+		delete srcFrame;
+	if (closest)
+		delete closest;
 }
 
 

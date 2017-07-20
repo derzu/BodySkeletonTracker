@@ -42,12 +42,12 @@ void SkeletonDepth::paintDepthCopy(openni::RGB888Pixel*m_pTexMap, openni::VideoF
 		{
 			const openni::DepthPixel* pDepth = pDepthRow;
 			openni::RGB888Pixel* pTex = pTexRow + depthFrame.getCropOriginX();
-			setDiffH(abs(closest.Y-y)/5); // diferenca (height) do ponto atual para o ponto mais proximo
+			setDiffH(abs(closest->y-y)/5); // diferenca (height) do ponto atual para o ponto mais proximo
 			for (int x = 0; x < width; ++x, ++pDepth, ++pTex)
 			{
 				if (*pDepth != 0)
 				{
-					setDiffW(abs(closest.X-x)/5); // diferenca (width) do ponto atual para o ponto mais proximo
+					setDiffW(abs(closest->x-x)/5); // diferenca (width) do ponto atual para o ponto mais proximo
 					f = paintDepthCopyPixel(pDepth, x, y, binarized);
 					depthMat[y*height*sizeof(short) + x*sizeof(short)] = *pDepth; 
 					//printf("vals: %d\n", *pDepth);
@@ -79,7 +79,7 @@ const float * SkeletonDepth::paintDepthCopyPixel(const openni::DepthPixel* pDept
 	//diff = 180 + diff_w + diff_h;
 	diff = 600 + diff_w + diff_h;
 
-	if (*pDepth == closest.Z)
+	if (*pDepth == closest->z)
 	{
 		rgb[0] = 0; // R
 		rgb[1] = 1; // G
@@ -87,7 +87,7 @@ const float * SkeletonDepth::paintDepthCopyPixel(const openni::DepthPixel* pDept
 
 		return rgb;
 	}
-	else if (*pDepth >= closest.Z && *pDepth <= closest.Z+diff)
+	else if (*pDepth >= closest->z && *pDepth <= closest->z+diff)
 	{
 		if (y%subSample==0 && x%subSample==0)
 			binarized.data[(y/subSample)*lineSize+x/subSample]=255;
@@ -96,7 +96,7 @@ const float * SkeletonDepth::paintDepthCopyPixel(const openni::DepthPixel* pDept
 			max = diff;
 		}
 
-		dist = ((*pDepth) - closest.Z)/maxDiff;
+		dist = ((*pDepth) - closest->z)/maxDiff;
 		if (dist<1) {
 			rgb[2] = 1-dist; // R
 			rgb[0] = dist;   // B
@@ -115,7 +115,7 @@ const float * SkeletonDepth::paintDepthCopyPixel(const openni::DepthPixel* pDept
 }
 
 
-void SkeletonDepth::prepareAnalisa(const closest_point::IntPoint3D& closest) {
+void SkeletonDepth::prepareAnalisa(Point3D * closest) {
 	this->closest = closest;
 }
 

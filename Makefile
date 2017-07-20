@@ -19,9 +19,9 @@ USED_LIBS += OpenNI2
 #if DEPTH camera like Orbbec Astra, or Asus Xtion add this flag DEPTH. If not comment the following line
 CFLAGS += -DDEPTH
 
-#EXE_NAME = BodySkeletonTracker
+EXE_NAME = BodySkeletonTracker
 #LIB_NAME = BodySkeletonTracker
-SLIB_NAME = BodySkeletonTracker
+#SLIB_NAME = BodySkeletonTracker
 
 #opencv
 CFLAGS += -g -std=c++11 

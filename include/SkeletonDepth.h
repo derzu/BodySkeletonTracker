@@ -2,8 +2,8 @@
 #define SKELETON_DEPTH_H
 
 #include <OpenNI.h>
-#include "MWClosestPoint.h"
 #include <opencv2/highgui.hpp>
+#include "Point3D.h"
 
 #define MAX_DEPTH 10000
 
@@ -19,7 +19,7 @@ class SkeletonDepth {
 	int max;
 	float maxDiff;
 	float dist;
-	closest_point::IntPoint3D closest;
+	Point3D * closest;
 	float m_pDepthHist[MAX_DEPTH];
 
 	const float * paintDepthCopyPixel(const openni::DepthPixel* pDepth, int x, int y, cv::Mat &binarized);
@@ -29,7 +29,7 @@ class SkeletonDepth {
     public:
 	SkeletonDepth(int, int, int);
 	void paintDepthCopy(openni::RGB888Pixel*m_pTexMap, openni::VideoFrameRef depthFrame, cv::Mat &binarized, short depthMat[]);
-	void prepareAnalisa(const closest_point::IntPoint3D& closest);
+	void prepareAnalisa(Point3D * closest);
 };
 
 
