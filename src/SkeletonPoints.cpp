@@ -13,7 +13,7 @@
  * The constructor
  **/
 SkeletonPoints::SkeletonPoints() {
-	Point3D zero = Point3D(0,0);
+	Point3D zero = Point3D(0,0,0);
 	this->rightHand = zero;
 	this->rightElbow = zero;
 	this->rightShoulder = zero;
@@ -25,6 +25,10 @@ SkeletonPoints::SkeletonPoints() {
 	this->head = zero;
 
 	init();
+}
+
+SkeletonPoints::~SkeletonPoints() {
+	
 }
 
 void SkeletonPoints::init() {

@@ -118,22 +118,30 @@ VideoFrameRef * SampleViewer::getNextFrame() {
 Point3D* SampleViewer::getClosestPoint(openni::VideoFrameRef *frame) {
 	Point3D *closestPoint = new Point3D();
 	DepthPixel* pDepth = (DepthPixel*)frame->getData();
+	//DepthPixel p;
 	bool found = false;
 	closestPoint->z = 0xffff;
 	int width = frame->getWidth();
 	int height = frame->getHeight();
+	
+	//printf("new way::%d::%d\n", width, height);
 
 	for (int y = 0; y < height; ++y)
 		for (int x = 0; x < width; ++x, ++pDepth)
 		{
+			//p = pDepth[y*width + x]; 
 			if (*pDepth < closestPoint->z && *pDepth != 0)
+			//if (p < closestPoint->z && p != 0)
 			{
 				closestPoint->x = x;
 				closestPoint->y = y;
 				closestPoint->z = *pDepth;
+				//closestPoint->z = p;
 				found = true;
 			}
 		}
+		
+	//printf("closest::%d\n", closestPoint->z);
 
 	if (!found)
 	{
@@ -209,7 +217,7 @@ void SampleViewer::display()
 	openni::VideoFrameRef * srcFrame = getNextFrame();
 	if (srcFrame==NULL)
 		return;
-	Point3D * closest = getClosestPoint(srcFrame);
+	closest = getClosestPoint(srcFrame);
 
 #else
 	Mat srcFrame;
@@ -273,7 +281,7 @@ void SampleViewer::display()
 
 		skelD->prepareAnalisa(closest);
 		//colore e obtem a imagem binarizada
-		skelD->paintDepthCopy((openni::RGB888Pixel*)m_pTexMap, *srcFrame, binarized, depthMat);
+		skelD->paintDepthCopy((openni::RGB888Pixel*)m_pTexMap, srcFrame, binarized, depthMat);
 		
 		skel->setDepthMat(depthMat);
 
@@ -337,6 +345,8 @@ void SampleViewer::display()
 
 
 void SampleViewer::notifyListeners(SkeletonPoints * sp, int afa) {
+	//printf("CLOSE=%6d :: head.z=%6d  left/rightHand=%6d::%6d::ombros=%6d::%6d\n", closest->z, sp->head.z, sp->leftHand.z, sp->rightHand.z, sp->leftShoulder.z, sp->rightShoulder.z);
+
 	for (std::vector<SkeletonListener*>::iterator it = listeners.begin(); it != listeners.end(); it++)
 		(*it)->onEvent(sp, afa);
 }

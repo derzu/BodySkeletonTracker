@@ -19,7 +19,7 @@ class Skeleton {
 
 	int wC; // w clear
 	int hC; // w clear
-	Point3D right, left, topCenter, topRight, topLeft, bottomCenter, bottomRight, bottomLeft;
+	cv::Point right, left, topCenter, topRight, topLeft, bottomCenter, bottomRight, bottomLeft;
 
 	// Main interest points
 	Point3D maxRight, maxLeft;

@@ -16,6 +16,7 @@ class SkeletonPoints {
 
 	public:
 		SkeletonPoints();
+		virtual ~SkeletonPoints();
 		void computePoint(int type);
 		static void quick_sort(int *a, int left, int right);
 

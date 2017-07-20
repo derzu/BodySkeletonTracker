@@ -23,14 +23,14 @@ SkeletonDepth::SkeletonDepth(int width, int height, int subSample) {
 
 
 
-void SkeletonDepth::paintDepthCopy(openni::RGB888Pixel*m_pTexMap, openni::VideoFrameRef depthFrame, cv::Mat &binarized, short depthMat[]) {
+void SkeletonDepth::paintDepthCopy(openni::RGB888Pixel*m_pTexMap, openni::VideoFrameRef * depthFrame, cv::Mat &binarized, short depthMat[]) {
 	calculateHistogram(m_pDepthHist, MAX_DEPTH, depthFrame);
 	float factor[3] = {1, 1, 1};
 	const float *f;
 
-	const openni::DepthPixel* pDepthRow = (const openni::DepthPixel*)depthFrame.getData();
-	openni::RGB888Pixel* pTexRow = m_pTexMap + depthFrame.getCropOriginY() * width;
-	int rowSize = depthFrame.getStrideInBytes() / sizeof(openni::DepthPixel);
+	const openni::DepthPixel* pDepthRow = (const openni::DepthPixel*)depthFrame->getData();
+	openni::RGB888Pixel* pTexRow = m_pTexMap + depthFrame->getCropOriginY() * width;
+	int rowSize = depthFrame->getStrideInBytes() / sizeof(openni::DepthPixel);
 
 	//printf("sizeof(openni::DepthPixel)=%ld\n", sizeof(openni::DepthPixel));
 	//printf("sizeof(short)=%ld\n", sizeof(short));
@@ -41,7 +41,7 @@ void SkeletonDepth::paintDepthCopy(openni::RGB888Pixel*m_pTexMap, openni::VideoF
 		for (int y = 0; y < height; ++y)
 		{
 			const openni::DepthPixel* pDepth = pDepthRow;
-			openni::RGB888Pixel* pTex = pTexRow + depthFrame.getCropOriginX();
+			openni::RGB888Pixel* pTex = pTexRow + depthFrame->getCropOriginX();
 			setDiffH(abs(closest->y-y)/5); // diferenca (height) do ponto atual para o ponto mais proximo
 			for (int x = 0; x < width; ++x, ++pDepth, ++pTex)
 			{
@@ -49,7 +49,7 @@ void SkeletonDepth::paintDepthCopy(openni::RGB888Pixel*m_pTexMap, openni::VideoF
 				{
 					setDiffW(abs(closest->x-x)/5); // diferenca (width) do ponto atual para o ponto mais proximo
 					f = paintDepthCopyPixel(pDepth, x, y, binarized);
-					depthMat[y*height*sizeof(short) + x*sizeof(short)] = *pDepth; 
+					depthMat[y*width + x] = *pDepth; 
 					//printf("vals: %d\n", *pDepth);
 					if (f)
 						memcpy(factor, f, sizeof(float)*3);

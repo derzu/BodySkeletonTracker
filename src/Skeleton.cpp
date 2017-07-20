@@ -48,8 +48,8 @@ void Skeleton::initialize() {
 
 
 Skeleton::~Skeleton() {
-	if (sp)
-		delete sp;
+	//if (sp)
+	//	delete sp;
 }
 
 void Skeleton::setDepthMat(short depth[]) {
@@ -101,51 +101,43 @@ void Skeleton::locateMaximus(cv::Mat *frame) {
 				if (x>=right.x) {
 					right.x = x;
 					right.y = y;
-					obtainZ(right);
 				}
 				if (x<left.x) {
 					left.x = x;
 					left.y = y;
-					obtainZ(left);
 				}
 				if (x>=centerWs-afa && x<=centerWs+afa) {
 					if (y<topCenter.y) {
 						topCenter.x = x;
 						topCenter.y = y;
-						obtainZ(topCenter);
 					}
 					if (y>bottomCenter.y) {
 						bottomCenter.x = x;
 						bottomCenter.y = y;
-						obtainZ(bottomCenter);
 					}
 				}
 				if (x>centerWs+afa*1.2) {
 					if (y<=topRight.y) {
 						topRight.x = x;
 						topRight.y = y;
-						obtainZ(topRight);
 					}
 				}
 				if (x>centerWs+afa*1.3) {
 					if (y>=bottomRight.y) {
 						bottomRight.x = x;
 						bottomRight.y = y;
-						obtainZ(bottomRight);
 					}
 				}
 				if (x<centerWs-afa*1.2) {
 					if (y<topLeft.y) {
 						topLeft.x = x;
 						topLeft.y = y;
-						obtainZ(topLeft);
 					}
 				}
 				if (x<centerWs-afa*1.3) {
 					if (y>bottomLeft.y) {
 						bottomLeft.x = x;
 						bottomLeft.y = y;
-						obtainZ(bottomLeft);
 					}
 				}
 			}
@@ -253,45 +245,45 @@ void Skeleton::setMaximus() {
 	if (right.y>0) {
 		maxRight.x = right.x*subSample;
 		maxRight.y = right.y*subSample;
-		maxRight.z = right.z;
+		obtainZ(maxRight);
 	}
 	if (left.y>0) {
 		maxLeft.x = left.x*subSample;
 		maxLeft.y = left.y*subSample;
-		maxLeft.z = left.z;
+		obtainZ(maxLeft);
 	}
 	if (topCenter.x>0)
 	{
 		maxTopCenter.x = topCenter.x*subSample;
 		maxTopCenter.y = topCenter.y*subSample;
-		maxTopCenter.z = topCenter.z;
+		obtainZ(maxTopCenter);
 	}
 	if (topRight.x>0)
 	{
 		maxTopRight.x = topRight.x*subSample;
 		maxTopRight.y = topRight.y*subSample;
-		maxTopRight.z = topRight.z;
+		obtainZ(maxTopRight);
 	}
 	if (topLeft.x>0)
 	{
 		maxTopLeft.x = topLeft.x*subSample;
 		maxTopLeft.y = topLeft.y*subSample;
-		maxTopLeft.z = topLeft.z;
+		obtainZ(maxTopLeft);
 	}
 	if (bottomCenter.x>0) {
 		maxBottomCenter.x = bottomCenter.x*subSample;
 		maxBottomCenter.y = bottomCenter.y*subSample;
-		maxBottomCenter.z = bottomCenter.z;
+		obtainZ(maxBottomCenter);
 	}
 	if (bottomRight.x>0) {
 		maxBottomRight.x = bottomRight.x*subSample;
 		maxBottomRight.y = bottomRight.y*subSample;
-		maxBottomRight.z = bottomRight.z;
+		obtainZ(maxBottomRight);
 	}
 	if (bottomLeft.x>0) {
 		maxBottomLeft.x = bottomLeft.x*subSample;
 		maxBottomLeft.y = bottomLeft.y*subSample;
-		maxBottomLeft.z = bottomLeft.z;
+		obtainZ(maxBottomLeft);
 	}
 	if (maxRight.x>0 && maxBottomRight.x>0) {
 			// add 5 para ficar mais para dentro do braco

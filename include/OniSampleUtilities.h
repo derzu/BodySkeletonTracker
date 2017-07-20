@@ -79,14 +79,14 @@ void Sleep(int millisecs)
 }
 #endif // WIN32
 
-void calculateHistogram(float* pHistogram, int histogramSize, const openni::VideoFrameRef& frame)
+void calculateHistogram(float* pHistogram, int histogramSize, const openni::VideoFrameRef* frame)
 {
-	const openni::DepthPixel* pDepth = (const openni::DepthPixel*)frame.getData();
+	const openni::DepthPixel* pDepth = (const openni::DepthPixel*)frame->getData();
 	// Calculate the accumulative histogram (the yellow display...)
 	memset(pHistogram, 0, histogramSize*sizeof(float));
-	int restOfRow = frame.getStrideInBytes() / sizeof(openni::DepthPixel) - frame.getWidth();
-	int height = frame.getHeight();
-	int width = frame.getWidth();
+	int restOfRow = frame->getStrideInBytes() / sizeof(openni::DepthPixel) - frame->getWidth();
+	int height = frame->getHeight();
+	int width = frame->getWidth();
 
 	unsigned int nNumberOfPoints = 0;
 	if (pDepth) {

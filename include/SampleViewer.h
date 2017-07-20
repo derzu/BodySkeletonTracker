@@ -45,6 +45,8 @@ private:
 	long frameCount;
 
 	unsigned char * m_pTexMap;
+	
+	Point3D * closest;
 
 	// Detecta o esqueleto
 	Skeleton * skel;
