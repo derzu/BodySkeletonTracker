@@ -31,7 +31,7 @@ protected:
 private:
 	SampleViewer(const SampleViewer&);
 	SampleViewer& operator=(SampleViewer&);
-	void notifyListeners(SkeletonPoints * sp, int afa, Point3D *closest);
+	void notifyListeners(SkeletonPoints * sp, int afa, Point3D *closest, cv::Mat &frame);
 	int initOpenNI(const char* deviceUri);
 	openni::VideoFrameRef * getNextFrame();
 	Point3D* getClosestPoint(openni::VideoFrameRef *frame);

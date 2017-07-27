@@ -325,7 +325,7 @@ void SampleViewer::display()
 		skel->drawMarkers(frame);
 		skel->prepare(depthMat, closest);
 		
-		notifyListeners(skel->getSkeletonPoints(), skel->getAfa(), closest);
+		notifyListeners(skel->getSkeletonPoints(), skel->getAfa(), closest, frame);
 
 		if (skeleton)
 			delete skeleton;
@@ -344,11 +344,23 @@ void SampleViewer::display()
 }
 
 
-void SampleViewer::notifyListeners(SkeletonPoints * sp, int afa, Point3D *closest) {
+void SampleViewer::notifyListeners(SkeletonPoints * sp, int afa, Point3D *closest, Mat &frame) {
 	//printf("CLOSE=%6d :: head.z=%6d  left/rightHand=%6d::%6d::ombros=%6d::%6d\n", closest->z, sp->head.z, sp->leftHand.z, sp->rightHand.z, sp->leftShoulder.z, sp->rightShoulder.z);
-
-	for (std::vector<SkeletonListener*>::iterator it = listeners.begin(); it != listeners.end(); it++)
-		(*it)->onEvent(sp, afa, closest);
+	std::vector<cv::Rect> * recs;
+	int i;
+	Scalar c;
+	c = Scalar(255,0,0);
+	for (std::vector<SkeletonListener*>::iterator it = listeners.begin(); it != listeners.end(); it++) {
+		recs = (*it)->onEvent(sp, afa, closest);
+		if (recs != NULL && recs->size() > 0) {
+			for (int i = 0 ; i< recs->size() ; i++) {
+				if (i==1) c = Scalar(0,0,255);
+				if (i==2) c = Scalar(0,255,0);
+				rectangle(frame, recs->at(i), c, 3, 8, 0 );
+			}
+				
+		}
+	}
 }
 
 void SampleViewer::registerListener(SkeletonListener * listener) {
