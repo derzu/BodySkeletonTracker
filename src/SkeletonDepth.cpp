@@ -36,8 +36,7 @@ void SkeletonDepth::paintDepthCopy(openni::RGB888Pixel*m_pTexMap, openni::VideoF
 	//printf("sizeof(short)=%ld\n", sizeof(short));
 
 	max = 0;
-	
-	if (pDepthRow) 
+	if (pDepthRow && closest) 
 		for (int y = 0; y < height; ++y)
 		{
 			const openni::DepthPixel* pDepth = pDepthRow;

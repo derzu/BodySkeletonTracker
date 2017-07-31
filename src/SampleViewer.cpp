@@ -9,6 +9,8 @@
 
 #include <iostream>
 
+#include "DrawAux.h"
+
 using namespace cv;
 using namespace std;
 
@@ -215,6 +217,7 @@ void SampleViewer::display()
 	int sizePixel = 3;
 #ifdef DEPTH
 	openni::VideoFrameRef * srcFrame = getNextFrame();
+
 	if (srcFrame==NULL)
 		return;
 	closest = getClosestPoint(srcFrame);
@@ -252,8 +255,8 @@ void SampleViewer::display()
 		width = srcFrame.cols;
 		height = srcFrame.rows;
 #endif
-//printf("w x h = %d x %d\n", width, height);
-		m_pTexMap = new unsigned char[width * height * sizePixel];
+printf("w x h = %d x %d\n", width, height);
+		m_pTexMap = new unsigned char[width * height * sizeof(openni::RGB888Pixel)];
 
 		skel = new Skeleton(width, height, subSample);
 #ifdef DEPTH
@@ -276,7 +279,7 @@ void SampleViewer::display()
 		Mat binarized(cv::Size(width/subSample, height/subSample), CV_8UC1, cv::Scalar(0));
 		short depthMat[width*height*sizeof(short)];
 		bzero(depthMat, width*height*sizeof(short));
-
+//printf("sizeof(openni::RGB888Pixel) = %ld\n", sizeof(openni::RGB888Pixel));
 		memset(m_pTexMap, 0, width*height*sizeof(openni::RGB888Pixel));
 
 		skelD->prepareAnalisa(closest);
@@ -287,7 +290,7 @@ void SampleViewer::display()
 
 		// Converte o openni::VideoFrameRef (srcFrame) para um cv::Mat (frame)
 		Mat frame = Mat(Size(width, height), CV_8UC3);
-		memcpy(frame.data, m_pTexMap, width*height*sizePixel);
+		memcpy(frame.data, m_pTexMap, width*height*sizeof(openni::RGB888Pixel));
 #else
 	if( srcFrame.data != NULL )
 	{
@@ -309,21 +312,20 @@ void SampleViewer::display()
 		Mat binarizedCp = binarized.clone();
 		skel->detectBiggerRegion(binarized);
 
-		Mat * skeleton = skel->thinning02(binarized);
+		Mat * skeleton = DrawAux::thinning02(binarized);
 		skel->analyse(skeleton);
 
-		std::vector<Point3D> bdireito = skel->getSkeletonArm(skeleton, true);
-		std::vector<Point3D> besquerdo= skel->getSkeletonArm(skeleton, false);
+		std::vector<Point3D> rightArm = skel->getSkeletonArm(skeleton, true);
+		std::vector<Point3D> leftArm= skel->getSkeletonArm(skeleton, false);
 
 		skel->locateMainBodyPoints(binarizedCp);
 
 		//skel->drawOverFrame(skeleton, frame);
-		//skel->drawOverFrame(bdireito, frame);
-		//skel->drawOverFrame(besquerdo, frame);
+		//skel->drawOverFrame(rightArm, frame);
+		//skel->drawOverFrame(leftArm, frame);
 		//skel->drawOverFrame(&binarizedCp, frame);
 
 		skel->drawMarkers(frame);
-		skel->prepare(depthMat, closest);
 		
 		notifyListeners(skel->getSkeletonPoints(), skel->getAfa(), closest, frame);
 

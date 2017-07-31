@@ -42,6 +42,9 @@ class Skeleton {
 	float afa28;
 	int shift;
 
+	std::vector<Point3D> rightArm;
+	std::vector<Point3D> leftArm;
+
 	bool showSkeleton;
 
     protected:
@@ -57,21 +60,18 @@ class Skeleton {
 	void removeSmallsRegions(cv::Mat * frame);
 	void locateMaximus(cv::Mat *frame);
 	int  getMeanDepthValue(cv::Point& p);
+	bool isLineInside(cv::Mat &frame, cv::Point p1, cv::Point p2);
+	int qPointsLineOutside(cv::Mat &frame, cv::Point p1, cv::Point p2);
 
     public:
 	Skeleton(int width, int height, int subSample);
 	virtual ~Skeleton();
-	static float euclideanDist(cv::Point& p, cv::Point& q);
-	static float euclideanDist3D(Point3D& p, Point3D& q);
 	void locateMainBodyPoints(cv::Mat &frame);
 	void drawMarkers(cv::Mat &frame);
 	void setDepthMat(short depth[]);
-	void prepare(short depth[], Point3D* closest);
 	void notifyListeners();
 	void drawOverFrame(cv::Mat * skelImg, cv::Mat &frame);
 	void drawOverFrame(std::vector<Point3D> pontos, cv::Mat &frame);
-	cv::Mat * thinning01(cv::Mat &binarized);
-	cv::Mat * thinning02(cv::Mat &binarized);
 	void detectBiggerRegion(cv::Mat &frame);
 	std::vector<Point3D> getSkeletonArm(cv::Mat * skeleton, bool right);
 	SkeletonPoints* getSkeletonPoints();
