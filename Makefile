@@ -27,8 +27,8 @@ EXE_NAME = BodySkeletonTracker
 #SLIB_NAME = BodySkeletonTracker
 
 #opencv
-CFLAGS += -g -std=c++11 
-LDFLAGS += $(shell pkg-config --libs --static opencv) -pthread 
+#CFLAGS += -g -std=c++11 
+LDFLAGS += $(shell pkg-config --libs --static opencv)
 
 ifndef OPENNI2_INCLUDE
     $(error OPENNI2_INCLUDE is not defined. Please define it or 'source' the OpenNIDevEnvironment file from the installation)

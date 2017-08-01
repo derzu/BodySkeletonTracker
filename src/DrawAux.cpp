@@ -187,7 +187,7 @@ cv::Mat * DrawAux::thinning01(cv::Mat &binarized) {
 
 
 
-
+// http://www.roguebasin.com/index.php?title=Bresenham%27s_Line_Algorithm#C.2B.2B
 std::vector<cv::Point> * DrawAux::lineBresenham(cv::Point p1, cv::Point p2)
 {
     std::vector<cv::Point> * points = new std::vector<cv::Point>();
