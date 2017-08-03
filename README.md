@@ -4,3 +4,7 @@ Human body skeleton from video camera in real time. It was developed for an Orbb
 
 # Descrição
 Geração de um esqueleto humano a partir de câmera de vídeo em tempo real. Foi desenvolvido para a câmera DRGB (Depth-RGB) Orbbec Astra, utilizando o driver OpenNI2, provavelmente funcionará também com o Asus Xtion. Funciona também com webcam normal, caso o background seja liso.
+
+# Video Exemple
+
+[![IMAGE ALT TEXT HERE](https://github.com/derzu/BodySkeletonTracker/blob/master/thumbs.png)](https://www.youtube.com/watch?v=9XYmkTN2RQY)
