@@ -2,8 +2,6 @@
 #include <stdio.h>
 #include <opencv2/imgproc.hpp>
 
-#include "OniSampleUtilities.h"
-
 using namespace cv;
 
 SkeletonDepth::SkeletonDepth(int width, int height, int subSample) {
@@ -24,7 +22,6 @@ SkeletonDepth::SkeletonDepth(int width, int height, int subSample) {
 
 
 void SkeletonDepth::paintDepthCopy(openni::RGB888Pixel*m_pTexMap, openni::VideoFrameRef * depthFrame, cv::Mat &binarized, short depthMat[]) {
-	calculateHistogram(m_pDepthHist, MAX_DEPTH, depthFrame);
 	float factor[3] = {1, 1, 1};
 	const float *f;
 
@@ -53,7 +50,8 @@ void SkeletonDepth::paintDepthCopy(openni::RGB888Pixel*m_pTexMap, openni::VideoF
 					if (f)
 						memcpy(factor, f, sizeof(float)*3);
 
-					int nHistValue = m_pDepthHist[*pDepth];
+					int nHistValue = 256*(1.0f - (*pDepth)/(float)(furthest->z-closest->z));
+					//printf("::depths::%d::%d - %d::nHistValue = %d::%d\n", *pDepth, furthest->z, closest->z, nHistValue, old);
 					pTex->r = nHistValue*factor[0];
 					pTex->g = nHistValue*factor[1];
 					pTex->b = nHistValue*factor[2];
@@ -114,8 +112,9 @@ const float * SkeletonDepth::paintDepthCopyPixel(const openni::DepthPixel* pDept
 }
 
 
-void SkeletonDepth::prepareAnalisa(Point3D * closest) {
+void SkeletonDepth::prepareAnalisa(Point3D * closest, Point3D *furthest) {
 	this->closest = closest;
+	this->furthest = furthest;
 }
 
 void SkeletonDepth::setDiffH(int d) {

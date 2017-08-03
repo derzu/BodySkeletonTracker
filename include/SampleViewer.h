@@ -34,9 +34,10 @@ private:
 	void notifyListeners(SkeletonPoints * sp, int afa, Point3D *closest, cv::Mat &frame);
 	int initOpenNI(const char* deviceUri);
 	openni::VideoFrameRef * getNextFrame();
-	Point3D* getClosestPoint(openni::VideoFrameRef *frame);
+	Point3D* getClosestPoint(openni::VideoFrameRef *frame, Point3D *furthest);
 
 	static SampleViewer* ms_self;
+	
 	
 	char			m_strSampleName[50];
 	unsigned int		width;
@@ -46,7 +47,7 @@ private:
 
 	unsigned char * m_pTexMap;
 	
-	Point3D * closest;
+	cv::VideoWriter * outputVideo;
 
 	// Detecta o esqueleto
 	Skeleton * skel;

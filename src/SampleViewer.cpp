@@ -117,12 +117,13 @@ VideoFrameRef * SampleViewer::getNextFrame() {
 	return frame;
 }
 
-Point3D* SampleViewer::getClosestPoint(openni::VideoFrameRef *frame) {
+Point3D* SampleViewer::getClosestPoint(openni::VideoFrameRef *frame, Point3D *furthest) {
 	Point3D *closestPoint = new Point3D();
 	DepthPixel* pDepth = (DepthPixel*)frame->getData();
 	//DepthPixel p;
 	bool found = false;
 	closestPoint->z = 0xffff;
+	furthest->z = 0;
 	int width = frame->getWidth();
 	int height = frame->getHeight();
 	
@@ -133,13 +134,18 @@ Point3D* SampleViewer::getClosestPoint(openni::VideoFrameRef *frame) {
 		{
 			//p = pDepth[y*width + x]; 
 			if (*pDepth < closestPoint->z && *pDepth != 0)
-			//if (p < closestPoint->z && p != 0)
 			{
 				closestPoint->x = x;
 				closestPoint->y = y;
 				closestPoint->z = *pDepth;
 				//closestPoint->z = p;
 				found = true;
+			}
+			else if (*pDepth > furthest->z && *pDepth != 0)
+			{
+				furthest->x = x;
+				furthest->y = y;
+				furthest->z = *pDepth;
 			}
 		}
 		
@@ -163,11 +169,15 @@ SampleViewer::~SampleViewer()
 	ms_self = NULL;
 
 	if (skel)
-            delete skel;
+		delete skel;
 #ifdef DEPTH
 	if (skelD)
-            delete skelD;
+		delete skelD;
 #endif
+	if (outputVideo) {
+		outputVideo->release();
+		delete outputVideo;
+	}
 }
 
 void SampleViewer::finalize()
@@ -215,12 +225,13 @@ printf("Compilado SEM Depth\n");
 void SampleViewer::display()
 {
 	int sizePixel = 3;
+	Point3D * furthest = new Point3D();
 #ifdef DEPTH
 	openni::VideoFrameRef * srcFrame = getNextFrame();
 
 	if (srcFrame==NULL)
 		return;
-	closest = getClosestPoint(srcFrame);
+	Point3D * closest = getClosestPoint(srcFrame, furthest);
 
 #else
 	Mat srcFrame;
@@ -266,6 +277,15 @@ printf("w x h = %d x %d\n", width, height);
 		//cvSetWindowProperty("Skeleton Traker", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
 		//resizeWindow("Skeleton Traker", width*2, height*2);
 		resizeWindow("Skeleton Traker", width, height);
+		
+		outputVideo = new VideoWriter("skeletonVideo.avi",
+		//outputVideo = new VideoWriter("skeletonVideo.mp4",  
+		       CV_FOURCC('D','I','V','X'),
+		       //CV_FOURCC('M', 'P', '4', '2'),
+		       //CV_FOURCC('L', 'A', 'G', 'S'),
+		       //CV_FOURCC('F', 'M', 'P', '4'),
+		       15, // FPS
+		       cv::Size(width, height));
 	}
 
 //printf("sizeof(openni::RGB888Pixel)=%ld\n", sizeof(openni::RGB888Pixel) );
@@ -282,7 +302,7 @@ printf("w x h = %d x %d\n", width, height);
 //printf("sizeof(openni::RGB888Pixel) = %ld\n", sizeof(openni::RGB888Pixel));
 		memset(m_pTexMap, 0, width*height*sizeof(openni::RGB888Pixel));
 
-		skelD->prepareAnalisa(closest);
+		skelD->prepareAnalisa(closest, furthest);
 		//colore e obtem a imagem binarizada
 		skelD->paintDepthCopy((openni::RGB888Pixel*)m_pTexMap, srcFrame, binarized, depthMat);
 		
@@ -336,6 +356,7 @@ printf("w x h = %d x %d\n", width, height);
 #endif
 		//imshow("Skeleton Traker", *skeleton);
 		imshow("Skeleton Traker", frame );
+		outputVideo->write(frame);
 		//imshow("Skeleton Traker", binarized2 );
 	}
 
@@ -343,6 +364,8 @@ printf("w x h = %d x %d\n", width, height);
 		delete srcFrame;
 	if (closest)
 		delete closest;
+	if (furthest)
+		delete furthest;
 }
 
 

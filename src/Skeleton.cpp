@@ -15,9 +15,8 @@ using namespace cv;
 // DONE Parar com a vibracao da cabeca
 // DONE Nao gerar o skeleto se o corpo nao tiver aparecendo.
 // - Cabeca nao pegar a mao quando levantar as maos
-// - Gravar video
+// DONE Gravar video
 // - Pegar o ombro mais perto e o mais longe para dectear rotacao
-// - Decidir qual deteccao de ombro usar.
 
 /**
  * This class process a frame and find the main skeleton points, that will be stored at a SkeletonPoints.
@@ -367,54 +366,6 @@ void Skeleton::locateMainBodyPoints(cv::Mat &frame) {
 
 	// Right Elbow/Cotovelo
 	sp->rightElbow.x=0;
-	// Analisando apenas o lado direito do corpo. Sera cotovelo se:
-	// Se o ponto maxRightMaxBottom estiver dentro da area do corpo E longe da mao.
-/*	if (maxRightMaxBottom.x!=0 && frame.data[(maxRightMaxBottom.y/subSample)*frame.cols + maxRightMaxBottom.x/subSample]==255 && DrawAux::euclideanDist(maxRightMaxBottom, sp->rightHand)>40) {
-		sp->rightElbow = maxRightMaxBottom;
-		//printf("\n\nelbow::case maxRightMaxBottom\n");
-	}
-	// braco esticado
-	// Se o ponto middleStraightArm estiver dentro da area do corpo E longe da mao. Analisa variacoes do ponto com 10 pixels em 4 direcoes.
-	else if (middleStraightArmRight.x!=0 &&
-	(frame.data[(middleStraightArmRight.y/subSample)*frame.cols + middleStraightArmRight.x/subSample]==255 ||
-	 //frame.data[(middleStraightArmRight.y/subSample)*frame.cols + (middleStraightArmRight.x+10)/subSample]==255 ||
-	 //frame.data[(middleStraightArmRight.y/subSample)*frame.cols + (middleStraightArmRight.x-10)/subSample]==255 ||
-	 frame.data[((middleStraightArmRight.y+10)/subSample)*frame.cols + middleStraightArmRight.x/subSample]==255 ||
-	 frame.data[((middleStraightArmRight.y-10)/subSample)*frame.cols + middleStraightArmRight.x/subSample]==255 ) ) {
-		sp->rightElbow = middleStraightArmRight;
-		//printf("\n\nelbow::case middleStraightArmRight \n" );
-		//imwrite( "middleStraightArmRight.png", frame );
-		if (frame.data[(middleStraightArmRight.y/subSample)*frame.cols + middleStraightArmRight.x/subSample]==255)
-			;
-		else if (frame.data[((middleStraightArmRight.y+10)/subSample)*frame.cols + middleStraightArmRight.x/subSample]==255)
-			sp->rightElbow.y = middleStraightArmRight.y+10;
-		else if (frame.data[((middleStraightArmRight.y-10)/subSample)*frame.cols + middleStraightArmRight.x/subSample]==255)
-			sp->rightElbow.y = middleStraightArmRight.y-10;
-	}
-	// Se o maxRight estiver a direita da mao E longe da mao.
-	else if (maxRight.x!=0 && maxRight.x - sp->rightHand.x > 20 && DrawAux::euclideanDist(maxRight, sp->rightHand)>40) {
-		sp->rightElbow = maxRight;
-		//printf("\n\nelbow::case         RIGHT\n");
-	}
-	// Se o maxBottom estiver abaixo da mao, maxRight e da mao E longe da mao E nao estiver muito na parte de baixo da imagem
-	else if (maxBottomRight.x!=0 && maxBottomRight.y - sp->rightHand.y > 10 && maxBottomRight.y - maxRight.y > 10 && DrawAux::euclideanDist(maxBottomRight, sp->rightHand)>40 && maxBottomRight.y < frame.rows-100) {
-		sp->rightElbow = maxBottomRight;
-		//printf("\n\nelbow::case BOTTOM\n");
-	}
-	else if (middleArmRight45.x!=0 && DrawAux::euclideanDist(middleArmRight45, sp->rightHand)>40) {
-		sp->rightElbow = middleArmRight45;
-		//printf("\n\nelbow::case middle ARM\n");
-	}
-	else if (middleArmRight.x!=0 && DrawAux::euclideanDist(middleArmRight, sp->rightHand)>40) {
-		sp->rightElbow = middleArmRight;
-		//printf("\n\nelbow::case middle ARM\n");
-	}
-	else {
-		//printf("\n\nelbow::case nenhum\n");
-	}
-*/
-
-
 	int points;
 	int menor;
 	Point3D p;
@@ -461,56 +412,7 @@ void Skeleton::locateMainBodyPoints(cv::Mat &frame) {
 	// Analisando apenas o lado esquerdo do corpo. Sera cotovelo se:
 
 
-	// Se o ponto maxLeftMaxBottom estiver dentro da area do corpo E longe da mao.
-/*	if (maxLeftMaxBottom.x!=0 && frame.data[(maxLeftMaxBottom.y/subSample)*frame.cols + maxLeftMaxBottom.x/subSample]==255 && DrawAux::euclideanDist(maxLeftMaxBottom, sp->leftHand)>40) {
-		sp->leftElbow = maxLeftMaxBottom;
-		//rintf("\n\nelbow::case maxLeftMaxBottom\n");
-	}
-	// braco esticado
-	// Se o ponto middleStraightArm estiver dentro da area do corpo E longe da mao.
-	else if (middleStraightArmLeft.x!=0 &&
-	(frame.data[(middleStraightArmLeft.y/subSample)*frame.cols + middleStraightArmLeft.x/subSample]==255 ||
-	 //frame.data[(middleStraightArmLeft.y/subSample)*frame.cols + (middleStraightArmLeft.x+10)/subSample]==255 ||
-	 //frame.data[(middleStraightArmLeft.y/subSample)*frame.cols + (middleStraightArmLeft.x-10)/subSample]==255 ||
-	 frame.data[((middleStraightArmLeft.y+10)/subSample)*frame.cols + middleStraightArmLeft.x/subSample]==255 ||
-	 frame.data[((middleStraightArmLeft.y-10)/subSample)*frame.cols + middleStraightArmLeft.x/subSample]==255 ) ) {
-		sp->leftElbow = middleStraightArmLeft;
-		//printf("\n\nelbow::case middleStraightArmLeft\n");
-		if (frame.data[(middleStraightArmLeft.y/subSample)*frame.cols + middleStraightArmLeft.x/subSample]==255)
-			;
-		/*else if (frame.data[(middleStraightArmLeft.y/subSample)*frame.cols + (middleStraightArmLeft.x+10)/subSample]==255)
-			sp->leftElbow.x = middleStraightArmLeft.x+10;
-		else if (frame.data[(middleStraightArmLeft.y/subSample)*frame.cols + (middleStraightArmLeft.x-10)/subSample]==255)
-			sp->leftElbow.x = middleStraightArmLeft.x-10;*/
-/*		else if (frame.data[((middleStraightArmLeft.y+10)/subSample)*frame.cols + middleStraightArmLeft.x/subSample]==255)
-			sp->leftElbow.y = middleStraightArmLeft.y+10;
-		else if (frame.data[((middleStraightArmLeft.y-10)/subSample)*frame.cols + middleStraightArmLeft.x/subSample]==255)
-			sp->leftElbow.y = middleStraightArmLeft.y-10;
-	}
-	// Mao esta mais a direita do que o cotovelo E o cotovelo nao pode estar proxima da mao E o x do Top, do Left e do Bottom nao estarem muito proximos E distante da mao
-	else if (maxLeft.x!=0 && ( (sp->leftHand.x-maxLeft.x > 5) && DrawAux::euclideanDist(maxLeft, sp->leftHand)>20  && !( abs(maxLeft.x-maxTopLeft.x) < 15 && abs(maxLeft.x-maxBottomLeft.x) < 30) &&
-		DrawAux::euclideanDist(maxLeft, sp->leftHand)>50) && isLineInside(frame, maxLeft, sp->leftHand)) {
-		sp->leftElbow = maxLeft;
-		//printf("\n\nelbow::case1\n");
-	}
-	// O ponto mais baixo estiver na linha da cintura (linha da cintura +- shift) E distante da mao E os Y's de maxBottom, maxLeft e middleArm NAO estiverem proximos.
-	// E nao estiver muito na parte de baixo da imagem
-	else if (maxBottomLeft.x!=0 && ((maxBottomLeft.y > sp->center.y-shift*1.3 && maxBottomLeft.y < sp->center.y+shift) && DrawAux::euclideanDist(maxBottomLeft, sp->leftHand)>50 &&
-               !( abs(maxBottomLeft.y-maxLeft.y) < 20 && abs(maxBottomLeft.y-middleArmLeft.y) < 20) ) && maxBottomRight.y < frame.rows-100 && isLineInside(frame, maxBottomLeft, sp->leftHand) ) {
-		sp->leftElbow = maxBottomLeft;
-		//printf("\n\nelbow::case2\n");
-	}
-	// O x do mais baixo e do mais a esquerda e o do middleArm forem muito proximos.  E distante da mao
-	else if (middleArmLeft45.x!=0 && DrawAux::euclideanDist(middleArmLeft45, sp->leftHand)>40 && isLineInside(frame, middleArmLeft45, sp->leftHand)) {
-		sp->leftElbow = middleArmLeft45;
-		//printf("\n\nelbow::case4\n");
-	}
-	// O x do mais baixo e do mais a esquerda e o do middleArm forem muito proximos.  E distante da mao
-	else if (middleArmLeft.x!=0 && DrawAux::euclideanDist(middleArmLeft, sp->leftHand)>40) {
-		sp->leftElbow = middleArmLeft;
-		//printf("\n\nelbow::case4\n");
-	}
-*/
+
 
 
 	// braco esticado
@@ -667,15 +569,15 @@ void Skeleton::drawMarkers(Mat &frame) {
 	Point ini = Point(sp->center.x, 1);	
 	Point fim = Point(sp->center.x, height-1);
 	Scalar c = Scalar(0,255,255);
-	line(frame, ini, fim, c, 1, 8, 0 ); // linha vertical central
+//	line(frame, ini, fim, c, 1, 8, 0 ); // linha vertical central
 	ini.x -= afa*subSample; fim.x -= afa*subSample;
-	line(frame, ini, fim, c, 1, 8, 0 ); // linha vertical esquerda
+//	line(frame, ini, fim, c, 1, 8, 0 ); // linha vertical esquerda
 	ini.x += afa*subSample*2; fim.x += afa*subSample*2;
-	line(frame, ini, fim, c, 1, 8, 0 ); // linha vertical direita
+//	line(frame, ini, fim, c, 1, 8, 0 ); // linha vertical direita
 
 	ini = Point(1      , sp->center.y);
 	fim = Point(width-1, sp->center.y);
-	line(frame, ini, fim, c, 1, 8, 0 ); // linha horizontal central
+//	line(frame, ini, fim, c, 1, 8, 0 ); // linha horizontal central
 
 	// Cabeca/Head
 	circle( frame, sp->head,           15, Scalar(255,255,0), 2, 8, 0 );

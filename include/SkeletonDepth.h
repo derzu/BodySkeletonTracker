@@ -5,8 +5,6 @@
 #include <opencv2/highgui.hpp>
 #include "Point3D.h"
 
-#define MAX_DEPTH 10000
-
 class SkeletonDepth {
     private:
 	int width, height;
@@ -20,7 +18,7 @@ class SkeletonDepth {
 	float maxDiff;
 	float dist;
 	Point3D * closest;
-	float m_pDepthHist[MAX_DEPTH];
+	Point3D * furthest;
 
 	const float * paintDepthCopyPixel(const openni::DepthPixel* pDepth, int x, int y, cv::Mat &binarized);
 	void setDiffH(int d);
@@ -29,7 +27,7 @@ class SkeletonDepth {
     public:
 	SkeletonDepth(int, int, int);
 	void paintDepthCopy(openni::RGB888Pixel*m_pTexMap, openni::VideoFrameRef *depthFrame, cv::Mat &binarized, short depthMat[]);
-	void prepareAnalisa(Point3D * closest);
+	void prepareAnalisa(Point3D * closest, Point3D * furthest);
 };
 
 
