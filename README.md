@@ -11,12 +11,12 @@ Detecção e rastreamento de um esqueleto humano a partir de câmera de vídeo e
 
 # Requirements
  - OpenCV library 
- - OpenNI2 library
-  - It was developed and tested on Ubuntu 14.04. Should work at any Linux, maybe Mac and Windows too.
+ - OpenNI2 library  
+ - It was developed and tested on Ubuntu 14.04. Should work at any Linux, maybe Mac and Windows too.  
 
 # Compile and run
- $ source ~/Downloads/OpenNI-Linux-x64-2.3/OpenNIDevEnvironment     (set your path appropriately)
- $ cd BodySkeletonTracker
- $ make
- $ cd Bin/x64-Release/
- $ ./BodySkeletonTracker
+ $ source ~/Downloads/OpenNI-Linux-x64-2.3/OpenNIDevEnvironment     (set your path appropriately)  
+ $ cd BodySkeletonTracker  
+ $ make  
+ $ cd Bin/x64-Release/  
+ $ ./BodySkeletonTracker  
