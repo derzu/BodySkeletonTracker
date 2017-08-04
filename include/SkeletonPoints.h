@@ -3,7 +3,7 @@
 
 #include <Point3D.h>
 
-#define BUF_SIZE 2
+#define BUF_SIZE 3
 #define MAX_BODY_POINTS 8
 
 /**

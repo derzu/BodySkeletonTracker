@@ -78,6 +78,35 @@ int SampleViewer::initOpenNI(const char* deviceUri) {
 		}
 	}
 
+	// Get the device vender and name, if Asus Xtion or Primesense set it's resolution to 640x480.
+	openni::Array<openni::DeviceInfo> deviceInfoList;
+	OpenNI::enumerateDevices(&deviceInfoList);
+	for (int i = 0; i < deviceInfoList.getSize(); i++)
+	{
+		printf(//"%d: Uri: %s\n"
+		    "Vendor: %s"
+		    ", Name: %s\n", /*i, deviceInfoList[i].getUri(),*/ deviceInfoList[i].getVendor(), deviceInfoList[i].getName());
+		    
+		if (strcmp(deviceInfoList[i].getVendor(), "PrimeSense")==0) // Asus Xtion and Primesense devices
+		{
+			// set resolution
+			// depth modes
+			cout << "Depth modes" << endl;
+			const openni::SensorInfo* sinfo = device.getSensorInfo(openni::SENSOR_DEPTH);
+			const openni::Array< openni::VideoMode>& modesDepth = sinfo->getSupportedVideoModes();
+			for (int i = 0; i < modesDepth.getSize(); i++) {
+				printf("%i: %ix%i, %i fps, %i format\n", i, modesDepth[i].getResolutionX(), modesDepth[i].getResolutionY(),
+				modesDepth[i].getFps(), modesDepth[i].getPixelFormat()); //PIXEL_FORMAT_DEPTH_1_MM = 100, PIXEL_FORMAT_DEPTH_100_UM
+			        if (modesDepth[i].getResolutionX() == 640 && modesDepth[i].getResolutionY() == 480) {
+					rc = depth.setVideoMode(modesDepth[4]); // 640x480        	
+					if (openni::STATUS_OK != rc)
+					    cout << "error: depth fromat not supprted..." << endl;
+				}
+			}
+		}
+	}
+
+
 	rc = depth.start();
 	if (rc != STATUS_OK)
 	{
@@ -264,6 +293,8 @@ void SampleViewer::display()
 		// Texture map init
 		width = srcFrame->getWidth();
 		height = srcFrame->getHeight();
+		if (width==320)
+			subSample = 1;
 #else
 	if (m_pTexMap == NULL && srcFrame.data!=NULL)
 	{
