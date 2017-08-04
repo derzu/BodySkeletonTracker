@@ -257,8 +257,6 @@ void SampleViewer::display()
 #endif
 
 
-
-
 	// So entra nesses if na primeira vez
 #ifdef DEPTH
 	if (m_pTexMap == NULL)
@@ -281,8 +279,6 @@ printf("w x h = %d x %d\n", width, height);
 		skelD = new SkeletonDepth(width, height, subSample);
 #endif
 		cvNamedWindow("Skeleton Traker", CV_WINDOW_NORMAL | CV_WINDOW_KEEPRATIO | CV_GUI_EXPANDED);
-		//cvSetWindowProperty("Skeleton Traker", CV_WND_PROP_FULLSCREEN, CV_WINDOW_FULLSCREEN);
-		//resizeWindow("Skeleton Traker", width*2, height*2);
 		resizeWindow("Skeleton Traker", width, height);
 		
 		outputVideo = new VideoWriter("skeletonVideo.avi",
@@ -327,6 +323,7 @@ printf("w x h = %d x %d\n", width, height);
 		cv::threshold(srcFrame, frameB, 70, 255, cv::THRESH_BINARY_INV);		
 		cv::resize(frameB, binarized, binarized.size());
 
+		skel->drawOverFrame2(&frameB, frame);
 		// mode webcam RGB, discard the first 10 frames, because they can be too white.
 		if (frameCount>10) {
 #endif
@@ -340,10 +337,9 @@ printf("w x h = %d x %d\n", width, height);
 
 		skel->locateMainBodyPoints(binarized);
 
-		skel->drawOverFrame(skeleton, frame);
+		//skel->drawOverFrame(skeleton, frame);
 		//skel->drawOverFrame(rightArm, frame);
 		//skel->drawOverFrame(leftArm, frame);
-		skel->drawOverFrame2(&frameB, frame);
 
 		skel->drawMarkers(frame);
 		
