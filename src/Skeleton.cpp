@@ -295,7 +295,9 @@ void Skeleton::setMaximus() {
  *
  **/
 void Skeleton::obtainZ(Point3D &point) {
+#ifdef DEPTH
 	point.z = getMeanDepthValue(point);
+#endif
 }
 
 /**
@@ -1080,8 +1082,8 @@ int Skeleton::getMeanDepthValue(cv::Point& p) {
 	int v;
 	int q=0;
 	int t=0;
-	int w = 640;
-	int h = 480;
+	int w = width;
+	int h = height;
 	
 	if (p.x<w-2 && p.x>1 && p.y>1 && p.y<w-2) {
 		v = depthMat[(p.y-2)*w + (p.x-2)];

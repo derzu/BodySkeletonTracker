@@ -32,12 +32,8 @@ private:
 	SampleViewer(const SampleViewer&);
 	SampleViewer& operator=(SampleViewer&);
 	void notifyListeners(SkeletonPoints * sp, int afa, Point3D *closest, cv::Mat &frame);
-	int initOpenNI(const char* deviceUri);
-	openni::VideoFrameRef * getNextFrame();
-	Point3D* getClosestPoint(openni::VideoFrameRef *frame, Point3D *furthest);
 
 	static SampleViewer* ms_self;
-	
 	
 	char			m_strSampleName[50];
 	unsigned int		width;
@@ -57,13 +53,13 @@ private:
 
 #ifdef DEPTH
 	// OPENNI2
-	SkeletonDepth * skelD;
-
-	//closest_point::ClosestPoint* m_pClosestPoint;
-	//MyMwListener* m_pClosestPointListener;
-	
+	int initOpenNI(const char* deviceUri);
+	Point3D* getClosestPoint(openni::VideoFrameRef *frame, Point3D *furthest);
+	openni::VideoFrameRef * getNextFrame();
 	openni::VideoStream depth;
 	openni::Device device;
+
+	SkeletonDepth * skelD;
 #else
 	// OPENCV
 	cv::VideoCapture capture;

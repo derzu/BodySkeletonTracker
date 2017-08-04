@@ -154,39 +154,6 @@ cv::Mat * DrawAux::thinning02(cv::Mat &binarized) {
 
 
 
-
-/**
- * Thinning/skeletonization operation over the binarized region of the body
- *
- * @param binarized - Mat with the binarized image
- * @return the thinning skeleton
- * @autor http://felix.abecassis.me/2011/09/opencv-morphological-skeleton/
- */
-cv::Mat * DrawAux::thinning01(cv::Mat &binarized) {
-	int width = binarized.cols;
-	int height = binarized.rows;
-	Mat * skeleton = new Mat(cv::Size(width, height), CV_8UC1, cv::Scalar(0));
-	Mat temp;
-	Mat eroded;
-	//Mat element = getStructuringElement(cv::MORPH_CROSS, cv::Size(3,3));
-	Mat element = getStructuringElement(cv::MORPH_CROSS, cv::Size(5,5));
-	bool done=false;      
-	do
-	{
-		cv::erode(binarized, eroded, element);
-		cv::dilate(eroded, temp, element);
-		cv::subtract(binarized, temp, temp);
-		cv::bitwise_or(*skeleton, temp, *skeleton);
-		eroded.copyTo(binarized);
-		done = (cv::countNonZero(binarized) == 0);
-	}
-	while (!done);
-
-	return skeleton;
-}
-
-
-
 // http://www.roguebasin.com/index.php?title=Bresenham%27s_Line_Algorithm#C.2B.2B
 std::vector<cv::Point> * DrawAux::lineBresenham(cv::Point p1, cv::Point p2)
 {

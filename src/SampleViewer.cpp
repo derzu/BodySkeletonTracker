@@ -52,7 +52,7 @@ SampleViewer::SampleViewer(const char* strSampleName, const char* deviceUri)
 	frameCount = 0;
 }
 
-
+#ifdef DEPTH
 int SampleViewer::initOpenNI(const char* deviceUri) {
 	Status rc = OpenNI::initialize();
 	if (rc != STATUS_OK)
@@ -117,6 +117,7 @@ VideoFrameRef * SampleViewer::getNextFrame() {
 	return frame;
 }
 
+
 Point3D* SampleViewer::getClosestPoint(openni::VideoFrameRef *frame, Point3D *furthest) {
 	Point3D *closestPoint = new Point3D();
 	DepthPixel* pDepth = (DepthPixel*)frame->getData();
@@ -158,6 +159,8 @@ Point3D* SampleViewer::getClosestPoint(openni::VideoFrameRef *frame, Point3D *fu
 
 	return closestPoint;
 }
+#endif
+
 
 SampleViewer::~SampleViewer()
 {
@@ -225,13 +228,16 @@ printf("Compilado SEM Depth\n");
 void SampleViewer::display()
 {
 	int sizePixel = 3;
-	Point3D * furthest = new Point3D();
+	Point3D * furthest = NULL;
+	Point3D * closest = NULL;
 #ifdef DEPTH
+	sizePixel = sizeof(openni::RGB888Pixel);
 	openni::VideoFrameRef * srcFrame = getNextFrame();
 
 	if (srcFrame==NULL)
 		return;
-	Point3D * closest = getClosestPoint(srcFrame, furthest);
+	furthest = new Point3D();
+	closest = getClosestPoint(srcFrame, furthest);
 
 #else
 	Mat srcFrame;
@@ -260,14 +266,14 @@ void SampleViewer::display()
 		width = srcFrame->getWidth();
 		height = srcFrame->getHeight();
 #else
-	if (m_pTexMap == NULL && srcFrame->data!=NULL)
+	if (m_pTexMap == NULL && srcFrame.data!=NULL)
 	{
 		// TODO pegar da webcam opencv
 		width = srcFrame.cols;
 		height = srcFrame.rows;
 #endif
 printf("w x h = %d x %d\n", width, height);
-		m_pTexMap = new unsigned char[width * height * sizeof(openni::RGB888Pixel)];
+		m_pTexMap = new unsigned char[width * height * sizePixel];
 
 		skel = new Skeleton(width, height, subSample);
 #ifdef DEPTH
@@ -299,8 +305,7 @@ printf("w x h = %d x %d\n", width, height);
 		Mat binarized(cv::Size(width/subSample, height/subSample), CV_8UC1, cv::Scalar(0));
 		short depthMat[width*height*sizeof(short)];
 		bzero(depthMat, width*height*sizeof(short));
-//printf("sizeof(openni::RGB888Pixel) = %ld\n", sizeof(openni::RGB888Pixel));
-		memset(m_pTexMap, 0, width*height*sizeof(openni::RGB888Pixel));
+		memset(m_pTexMap, 0, width*height*sizePixel);
 
 		skelD->prepareAnalisa(closest, furthest);
 		//colore e obtem a imagem binarizada
@@ -310,7 +315,7 @@ printf("w x h = %d x %d\n", width, height);
 
 		// Converte o openni::VideoFrameRef (srcFrame) para um cv::Mat (frame)
 		Mat frame = Mat(Size(width, height), CV_8UC3);
-		memcpy(frame.data, m_pTexMap, width*height*sizeof(openni::RGB888Pixel));
+		memcpy(frame.data, m_pTexMap, width*height*sizePixel);
 #else
 	if( srcFrame.data != NULL )
 	{
@@ -356,12 +361,14 @@ printf("w x h = %d x %d\n", width, height);
 #endif
 		//imshow("Skeleton Traker", *skeleton);
 		imshow("Skeleton Traker", frame );
-		outputVideo->write(frame);
 		//imshow("Skeleton Traker", binarized2 );
+		//outputVideo->write(frame);
 	}
 
+#ifdef DEPTH
 	if (srcFrame)
 		delete srcFrame;
+#endif
 	if (closest)
 		delete closest;
 	if (furthest)
