@@ -242,8 +242,9 @@ void SampleViewer::display()
 #else
 	Mat srcFrame;
 	srcFrame.data = NULL;
+	Mat framec;
+	framec.data = NULL;
 	if( capture.isOpened() ) {
-		Mat framec;
 		capture >> framec;
 		if(! framec.empty() ) {
 			srcFrame = cv::Mat(framec.size(), CV_8UC1);
@@ -319,36 +320,30 @@ printf("w x h = %d x %d\n", width, height);
 #else
 	if( srcFrame.data != NULL )
 	{
-		Mat binarizedFirst(cv::Size(width/subSample, height/subSample), CV_8UC1, cv::Scalar(0));
-		Mat binarized     (cv::Size(width/subSample, height/subSample), CV_8UC1, cv::Scalar(0));
+		Mat binarized(cv::Size(width/subSample, height/subSample), CV_8UC1, cv::Scalar(0));
+		Mat frame = framec;
+		Mat frameB;
 
-		cv::resize(srcFrame, binarizedFirst, binarizedFirst.size());
-
-		cv::threshold(binarizedFirst, binarized, 50, 255, cv::THRESH_BINARY_INV);
-		
-
-		Mat frame = srcFrame;
-		//Mat frame = binarizedFirst;
+		cv::threshold(srcFrame, frameB, 70, 255, cv::THRESH_BINARY_INV);		
+		cv::resize(frameB, binarized, binarized.size());
 
 		// mode webcam RGB, discard the first 10 frames, because they can be too white.
 		if (frameCount>10) {
 #endif
-
-		Mat binarizedCp = binarized.clone();
 		skel->detectBiggerRegion(binarized);
 
-		Mat * skeleton = DrawAux::thinning02(binarized);
+		Mat * skeleton = DrawAux::thinning(binarized);
 		skel->analyse(skeleton);
 
 		std::vector<Point3D> rightArm = skel->getSkeletonArm(skeleton, true);
 		std::vector<Point3D> leftArm= skel->getSkeletonArm(skeleton, false);
 
-		skel->locateMainBodyPoints(binarizedCp);
+		skel->locateMainBodyPoints(binarized);
 
-		//skel->drawOverFrame(skeleton, frame);
+		skel->drawOverFrame(skeleton, frame);
 		//skel->drawOverFrame(rightArm, frame);
 		//skel->drawOverFrame(leftArm, frame);
-		//skel->drawOverFrame(&binarizedCp, frame);
+		skel->drawOverFrame2(&frameB, frame);
 
 		skel->drawMarkers(frame);
 		
@@ -357,7 +352,7 @@ printf("w x h = %d x %d\n", width, height);
 		if (skeleton)
 			delete skeleton;
 #ifndef DEPTH
-		}
+		} // if (frameCount>10)
 #endif
 		//imshow("Skeleton Traker", *skeleton);
 		imshow("Skeleton Traker", frame );

@@ -122,32 +122,26 @@ void thinningIteration(cv::Mat& img, int iter)
  *
  * Parameters:
  * 		src  The source image, binary with range = [0,255]
- * 		dst  The destination image
+ * 		skeleton The destination image
  */
-void thinning02_(const cv::Mat& src, cv::Mat& dst)
-{
-    dst = src.clone();
-    dst /= 255;         // convert to binary image
-
-    cv::Mat prev = cv::Mat::zeros(dst.size(), CV_8UC1);
-    cv::Mat diff;
-
-    do {
-        thinningIteration(dst, 0);
-        thinningIteration(dst, 1);
-        cv::absdiff(dst, prev, diff);
-        dst.copyTo(prev);
-    } 
-    while (cv::countNonZero(diff) > 0);
-
-    dst *= 255;
-}
-
-
-cv::Mat * DrawAux::thinning02(cv::Mat &binarized) {
+cv::Mat * DrawAux::thinning(cv::Mat &binarized) {
 	Mat * skeleton = new Mat(cv::Size(binarized.cols, binarized.rows), CV_8UC1, cv::Scalar(0));
-	
-	thinning02_(binarized, *skeleton);
+
+	*skeleton = binarized.clone();
+	*skeleton /= 255;         // convert to binary image
+
+	cv::Mat prev = cv::Mat::zeros(skeleton->size(), CV_8UC1);
+	cv::Mat diff;
+
+	do {
+		thinningIteration(*skeleton, 0);
+		thinningIteration(*skeleton, 1);
+		cv::absdiff(*skeleton, prev, diff);
+		skeleton->copyTo(prev);
+	} 
+	while (cv::countNonZero(diff) > 0);
+
+	*skeleton *= 255;
 	
 	return skeleton;
 }

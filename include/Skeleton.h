@@ -71,6 +71,7 @@ class Skeleton {
 	void setDepthMat(short depth[]);
 	void notifyListeners();
 	void drawOverFrame(cv::Mat * skelImg, cv::Mat &frame);
+	void drawOverFrame2(cv::Mat * bin,    cv::Mat &frame);
 	void drawOverFrame(std::vector<Point3D> pontos, cv::Mat &frame);
 	void detectBiggerRegion(cv::Mat &frame);
 	std::vector<Point3D> getSkeletonArm(cv::Mat * skeleton, bool right);

@@ -283,11 +283,6 @@ void Skeleton::setMaximus() {
 		obtainZ(middleStraightArmLeft);
 	}
 
-	//sp->center.x = maxLeft.x + (maxRight.x-maxLeft.x)/2;
-	/*sp->center.y = (maxTopCenter.y + (maxBottomCenter.y-maxTopCenter.y)/2 +//);
-		   maxTopRight.y  + (maxBottomRight.y-maxTopRight.y)/2 + 
-		   maxTopLeft.y   + (maxBottomLeft.y-maxTopLeft.y)/2 ) / 3;
-*/
 }
 
 /**
@@ -661,6 +656,31 @@ void Skeleton::drawOverFrame(Mat * skelImg, Mat &frame) {
 		}
 	}
 }
+
+
+
+/**
+ * Desenha os pontos==255 de uma matriz binaria (bin) sobre outra matriz (frame) em um tom de cinza.
+ *
+ * @param bin Matriz cujos de pontos serao desenhados em frame
+ * @param frame Matriz onde os pontos serao desenhados.
+ **/
+void Skeleton::drawOverFrame2(Mat * bin, Mat &frame) {
+	int w = bin->cols;
+	int h = bin->rows;
+	int x,y;
+
+	for (y=0 ; y<h ; y++) {
+		for (x=0 ; x<w ; x++) {
+			if (bin->data[y*w+x]==255) {
+				frame.data[y*w*3 + x*3    ] = 200;
+				frame.data[y*w*3 + x*3 + 1] = 200;
+				frame.data[y*w*3 + x*3 + 2] = 200;
+			}
+		}
+	}
+}
+
 
 /**
  * Desenha o vetor de pontos sobre a matriz (frame).
@@ -1048,6 +1068,8 @@ void Skeleton::clearRegion(unsigned char * frame, int x, int y) {
  **/
 void Skeleton::getSizeRegion(unsigned char * frame, int x, int y, int *quant) {
 	if (x<wC && y<hC && x>=0 && y>=0 && frame[y*wC+x]==255) {
+		if (*quant > wC*hC*2/3)
+			return;
 		frame[y*wC+x]=0;
 		(*quant)++;
 		getSizeRegion(frame, x-1, y-1, quant);
