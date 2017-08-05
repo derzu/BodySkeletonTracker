@@ -10,7 +10,7 @@ Detecção e rastreamento de um esqueleto humano a partir de câmera de vídeo e
 [![IMAGE ALT TEXT HERE](https://github.com/derzu/BodySkeletonTracker/blob/master/thumbs.png)](https://www.youtube.com/watch?v=9XYmkTN2RQY)
 
 # Requirements
- - OpenCV library 
+ - OpenCV library (just for line/circle drawing and window frame showing)
  - OpenNI2 library  
  - It was developed and tested on Ubuntu 14.04. Should work at any Linux, maybe Mac and Windows too.  
 
