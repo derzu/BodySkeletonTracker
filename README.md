@@ -2,6 +2,8 @@
 # Description
 Human body skeleton detection and tracking from video camera in real time. It was developed for an Orbbec Astra camera DRGB (Depth-RGB), uses the OpenNI2 driver, it should also works with Asus Xtion and Prime Sense. It works with normal webcam, in the case of background is smooth.
 
+Currently it detects just the joints of head, shoulders, elbows and hands. A new version can be developed to also detect also feets and knees.
+
 # Descrição
 Detecção e rastreamento de um esqueleto humano a partir de câmera de vídeo em tempo real. Foi desenvolvido para a câmera DRGB (Depth-RGB) Orbbec Astra, utilizando o driver OpenNI2, funciona também com o Asus Xtion e Prime Sense. Funciona também com webcam normal, caso o background seja liso e branco.
 
