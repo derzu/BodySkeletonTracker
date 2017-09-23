@@ -6,6 +6,6 @@ LDFLAGS += $(shell pkg-config --libs --static opencv) -std=c++11 -pthread -I inc
 all: BodySkeletonTracker
 
 BodySkeletonTracker:
-	$(CXX) src/main.cpp src/Skeleton.cpp src/Viewer.cpp src/Tiago.cpp $(LDFLAGS) -o Bin/x64-Release/BodySkeletonTracker
+	$(CXX) src/main.cpp src/Skeleton.cpp src/SampleViewer.cpp src/Point3D.cpp src/SkeletonPoints.cpp src/DrawAux.cpp $(LDFLAGS) -o Bin/x64-Release/BodySkeletonTracker
 
 clean: ; rm -f src/*.o Bin/x64-Release/BodySkeletonTracker *~ src/*~ include/*~
