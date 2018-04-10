@@ -3,20 +3,12 @@
 #include <opencv2/imgproc.hpp>
 #include <strings.h>
 #include <list>
+#include <stack>
 #include "DrawAux.h"
 
 //#define DEBUG 
 
 using namespace cv;
-
-// TODO 
-// DONE Media dos 10 ultimos
-// DONE Nao exibir os pontos quando nao encontra-los.
-// DONE Parar com a vibracao da cabeca
-// DONE Nao gerar o skeleto se o corpo nao tiver aparecendo.
-// - Cabeca nao pegar a mao quando levantar as maos
-// DONE Gravar video
-// - Pegar o ombro mais perto e o mais longe para dectear rotacao
 
 /**
  * This class process a frame and find the main skeleton points, that will be stored at a SkeletonPoints.
@@ -711,7 +703,6 @@ void Skeleton::detectBiggerRegion(Mat &frame) {
 	hC = frame.rows;
 	unsigned char datacp[wC*hC];
 
-
 	maior = 0;
 	memcpy(datacp, frame.data, wC*hC);
 
@@ -719,13 +710,15 @@ void Skeleton::detectBiggerRegion(Mat &frame) {
 		for (x=0 ; x<wC ; x++) {
 			if (datacp[y*wC+x]==255) {
 				size = 0;
-				getSizeRegion(datacp, x, y, &size);
+				//getSizeRegionRecursive(datacp, x, y, &size);
+				size = getSizeRegion(datacp, x, y);
 				if (maior < size) {
 					//printf("maior = %d, size = %d\n", maior, size);
 					// apaga a regiao que nao eh a maior da imagem original.
 					if (maior>0)
 						clearRegion(frame.data, xM, yM);
 
+					//printf("size1 = %d, size2 = %d\n", size, size2)	;
 					maior = size;
 					xM = x;
 					yM = y;
@@ -771,7 +764,8 @@ void Skeleton::removeSmallsRegions(Mat * frame) {
 		for (x=0 ; x<wC ; x++) {
 			if (datacp[y*wC+x]==255) {
 				size = 0;
-				getSizeRegion(datacp, x, y, &size);
+				//getSizeRegionRecursive(datacp, x, y, &size);
+				size = getSizeRegion(datacp, x, y);
 				if (size<6) {
 					clearRegion(frame->data, x, y);
 				}
@@ -1037,11 +1031,13 @@ std::vector<Point3D> Skeleton::getSkeletonArm(Mat * skeleton, bool right) {
  * All the region must be with the 255 value and will be replaced by 0.
  * Keep doint that on the 8-Connected neighborhood recursively.
  * 
+ * Recursive version
+ *
  * @param frame the imagem frame
  * @param x coordinate of the point
  * @param y coordinate of the point
  **/
-void Skeleton::clearRegion(unsigned char * frame, int x, int y) {
+void Skeleton::clearRegionRecursive(unsigned char * frame, int x, int y) {
 	if (x<wC && y<hC && x>=0 && y>=0 && frame[y*wC+x]==255) {
 		frame[y*wC+x]=0;
 		clearRegion(frame, x-1, y-1);
@@ -1054,6 +1050,27 @@ void Skeleton::clearRegion(unsigned char * frame, int x, int y) {
 		clearRegion(frame, x+1, y+1);
 	}
 }
+void Skeleton::clearRegion(unsigned char * frame, int x, int y) {
+	std::stack<cv::Point> points;
+	points.push(Point(x, y));
+	frame[y*wC+x]=0;
+
+	Point p;
+	do {
+		p = points.top();
+		points.pop();
+		x = p.x;
+		y = p.y;
+		if (verifyRegion(frame, x-1, y-1)) { points.push(Point(x-1, y-1)); }
+		if (verifyRegion(frame, x  , y-1)) { points.push(Point(x  , y-1)); }
+		if (verifyRegion(frame, x+1, y-1)) { points.push(Point(x+1, y-1)); }
+		if (verifyRegion(frame, x-1, y  )) { points.push(Point(x-1, y  )); }
+		if (verifyRegion(frame, x+1, y  )) { points.push(Point(x+1, y  )); }
+		if (verifyRegion(frame, x-1, y+1)) { points.push(Point(x-1, y+1)); }
+		if (verifyRegion(frame, x  , y+1)) { points.push(Point(x  , y+1)); }
+		if (verifyRegion(frame, x+1, y+1)) { points.push(Point(x+1, y+1)); }
+	} while (points.size()>0);
+}
 
 
 /**
@@ -1061,26 +1078,79 @@ void Skeleton::clearRegion(unsigned char * frame, int x, int y) {
  * All the region must be with the 255 value and will be replaced by 0.
  * Keep doint that on the 8-Connected neighborhood recursively.
  * 
+ * Recursive version
+ *
  * @param frame the imagem frame
  * @param x coordinate of the point
  * @param y coordinate of the point
  * @param quant the result (size of the region) will be stored here.
  **/
-void Skeleton::getSizeRegion(unsigned char * frame, int x, int y, int *quant) {
+void Skeleton::getSizeRegionRecursive(unsigned char * frame, int x, int y, int *quant) {
 	if (x<wC && y<hC && x>=0 && y>=0 && frame[y*wC+x]==255) {
 		if (*quant > wC*hC*2/3)
 			return;
 		frame[y*wC+x]=0;
 		(*quant)++;
-		getSizeRegion(frame, x-1, y-1, quant);
-		getSizeRegion(frame, x  , y-1, quant);
-		getSizeRegion(frame, x+1, y-1, quant);
-		getSizeRegion(frame, x-1, y,   quant);
-		getSizeRegion(frame, x+1, y,   quant);
-		getSizeRegion(frame, x-1, y+1, quant);
-		getSizeRegion(frame, x  , y+1, quant);
-		getSizeRegion(frame, x+1, y+1, quant);
+		getSizeRegionRecursive(frame, x-1, y-1, quant);
+		getSizeRegionRecursive(frame, x  , y-1, quant);
+		getSizeRegionRecursive(frame, x+1, y-1, quant);
+		getSizeRegionRecursive(frame, x-1, y,   quant);
+		getSizeRegionRecursive(frame, x+1, y,   quant);
+		getSizeRegionRecursive(frame, x-1, y+1, quant);
+		getSizeRegionRecursive(frame, x  , y+1, quant);
+		getSizeRegionRecursive(frame, x+1, y+1, quant);
 	}
+}
+
+
+bool Skeleton::verifyRegion(unsigned char * frame, int x, int y) {
+	if (x<wC && y<hC && x>=0 && y>=0 && frame[y*wC+x]==255)
+	{
+		frame[y*wC+x]=0;
+		return true;
+	}
+	else
+		return false;
+}
+
+/**
+ * Get the size of a 8-Connected region with the point specified by the params xy. 
+ * All the region must be with the 255 value and will be replaced by 0.
+ * Keep doint that on the 8-Connected neighborhood recursively.
+ * 
+ * Iterative version
+ *
+ * @param frame the imagem frame
+ * @param x coordinate of the point
+ * @param y coordinate of the point
+ * @param quant the result (size of the region) will be stored here.
+ **/
+int Skeleton::getSizeRegion(unsigned char * frame, int x, int y) {
+	std::stack<cv::Point> points;
+	points.push(Point(x, y));
+	frame[y*wC+x]=0;
+	int quant = 1;
+
+	Point p;
+	do {
+		p = points.top();
+		points.pop();
+		x = p.x;
+		y = p.y;
+		if (verifyRegion(frame, x-1, y-1)) { quant++; points.push(Point(x-1, y-1)); }
+		if (verifyRegion(frame, x  , y-1)) { quant++; points.push(Point(x  , y-1)); }
+		if (verifyRegion(frame, x+1, y-1)) { quant++; points.push(Point(x+1, y-1)); }
+		if (verifyRegion(frame, x-1, y  )) { quant++; points.push(Point(x-1, y  )); }
+		if (verifyRegion(frame, x+1, y  )) { quant++; points.push(Point(x+1, y  )); }
+		if (verifyRegion(frame, x-1, y+1)) { quant++; points.push(Point(x-1, y+1)); }
+		if (verifyRegion(frame, x  , y+1)) { quant++; points.push(Point(x  , y+1)); }
+		if (verifyRegion(frame, x+1, y+1)) { quant++; points.push(Point(x+1, y+1)); }
+	
+		if (quant > wC*hC*2/3)
+			break;
+	} while (points.size()>0);
+	
+	return quant;
 }
 
 

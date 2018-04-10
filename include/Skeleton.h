@@ -52,7 +52,9 @@ class Skeleton {
 	void zeraMaximus();
 	void setMaximus();
 	void locateShoulders(cv::Mat &frame);
-	void getSizeRegion(unsigned char * frame, int x, int y, int *quant);
+	void getSizeRegionRecursive(unsigned char * frame, int x, int y, int *quant);
+	int  getSizeRegion(unsigned char * frame, int x, int y);
+	void clearRegionRecursive(unsigned char * frame, int x, int y);
 	void clearRegion(unsigned char * frame, int x, int y);
 	Point3D * getElbowHard(std::vector<Point3D> &armPoints, int ang);
 	Point3D mediaPoint(cv::Mat * frame);
@@ -61,7 +63,9 @@ class Skeleton {
 	void locateMaximus(cv::Mat *frame);
 	int  getMeanDepthValue(cv::Point& p);
 	bool isLineInside(cv::Mat &frame, cv::Point p1, cv::Point p2);
-	int qPointsLineOutside(cv::Mat &frame, cv::Point p1, cv::Point p2);
+	int  qPointsLineOutside(cv::Mat &frame, cv::Point p1, cv::Point p2);
+	bool verifyRegion(unsigned char * frame, int x, int y);
+	
 
     public:
 	Skeleton(int width, int height, int subSample);
