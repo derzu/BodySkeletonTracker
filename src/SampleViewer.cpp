@@ -192,7 +192,6 @@ Point3D* SampleViewer::getClosestPoint(openni::VideoFrameRef *frame, Point3D *fu
 }
 #endif
 
-
 SampleViewer::~SampleViewer()
 {
 	finalize();
@@ -234,17 +233,15 @@ int SampleViewer::init()
 int SampleViewer::run()	//Does not return
 {
 #ifdef DEPTH
-printf("Compilado com Depth\n");
+printf("Compiled with Depth\n");
 #else
-printf("Compilado SEM Depth\n");
+printf("Compiled without Depth\n");
 #endif
 
 	while (1) {
 		display();
 		char c = (char)waitKey(10);
 		//char c = (char)waitKey(100);
-		//char c = (char)waitKey(200);
-		//char c = (char)waitKey(500);
 		//char c = (char)waitKey(1000);
 	        if( c == 27 || c == 'q' || c == 'Q' )
         	        break;
@@ -283,7 +280,7 @@ void SampleViewer::display()
 			//srcFrame = framec.clone();
 		}
 		else
-			printf("frame nulo\n");
+			printf("null frame\n");
 	}
 #endif
 
@@ -338,12 +335,12 @@ printf("w x h = %d x %d\n", width, height);
 		memset(m_pTexMap, 0, width*height*sizePixel);
 
 		skelD->prepareAnalisa(closest, furthest);
-		//colore e obtem a imagem binarizada
+		//paint with color and get the binarized image.
 		skelD->paintDepthCopy((openni::RGB888Pixel*)m_pTexMap, srcFrame, binarized, depthMat);
 		
 		skel->setDepthMat(depthMat);
 
-		// Converte o openni::VideoFrameRef (srcFrame) para um cv::Mat (frame)
+		// Convert openni::VideoFrameRef (srcFrame) to cv::Mat (frame)
 		Mat frame = Mat(Size(width, height), CV_8UC3);
 		memcpy(frame.data, m_pTexMap, width*height*sizePixel);
 #else
