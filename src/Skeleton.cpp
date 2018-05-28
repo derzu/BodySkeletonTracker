@@ -453,8 +453,10 @@ void Skeleton::locateMainBodyPoints(cv::Mat &frame) {
  * @return true if all the points of the line are inside the body region. false otherwise.
  **/
 bool Skeleton::isLineInside(Mat &frame, cv::Point p1, cv::Point p2) {
-	p1 /= subSample;
-	p2 /= subSample;
+	p1.x /= subSample;
+	p1.y /= subSample;
+	p2.x /= subSample;
+	p2.y /= subSample;
 	std::vector<cv::Point> * lines = DrawAux::lineBresenham(p1, p2);
 	//printf("isLineInside::count=%ld::%d %d::%d %d\n", lines->size(), p1.x, p1.y, p2.x, p2.y);
 	int q = 0;
@@ -480,8 +482,10 @@ bool Skeleton::isLineInside(Mat &frame, cv::Point p1, cv::Point p2) {
 }
 
 int Skeleton::qPointsLineOutside(Mat &frame, cv::Point p1, cv::Point p2) {
-	p1 /= subSample;
-	p2 /= subSample;
+	p1.x /= subSample;
+	p1.y /= subSample;
+	p2.x /= subSample;
+	p2.y /= subSample;
 	std::vector<cv::Point> * lines = DrawAux::lineBresenham(p1, p2);
 	//printf("isLineInside::count=%ld::%d %d::%d %d\n", lines->size(), p1.x, p1.y, p2.x, p2.y);
 	int q = 0;

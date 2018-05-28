@@ -11,9 +11,9 @@ int main(int argc, char** argv)
 #endif
 
 #ifdef DEPTH
-printf("main::Compilado com Depth\n");
+printf("main::Compiled with Depth\n");
 #else
-printf("main::Compilado SEM Depth\n");
+printf("main::Compiled witout Depth\n");
 #endif
 
 	/*if (argc > 1)
