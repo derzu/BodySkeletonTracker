@@ -1,7 +1,7 @@
 #ifndef POINT3D_H
 #define POINT3D_H
 
-#include <opencv2/highgui.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 /**
  * This class is a 3D Point based on the 2D point of the OpenCV.
