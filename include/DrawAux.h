@@ -1,4 +1,4 @@
-#include <opencv2/core.hpp>
+#include <opencv2/core/core.hpp>
 #include "Point3D.h"
 
 class DrawAux {

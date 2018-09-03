@@ -2,7 +2,7 @@
 #define SKELETON_DEPTH_H
 
 #include <OpenNI.h>
-#include <opencv2/highgui.hpp>
+#include <opencv2/highgui/highgui.hpp>
 #include "Point3D.h"
 
 class SkeletonDepth {

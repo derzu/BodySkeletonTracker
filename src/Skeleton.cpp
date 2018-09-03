@@ -1,6 +1,6 @@
 #include "Skeleton.h"
 #include <stdio.h>
-#include <opencv2/imgproc.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 #include <strings.h>
 #include <list>
 #include <stack>

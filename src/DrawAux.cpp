@@ -1,5 +1,5 @@
 #include "DrawAux.h"
-#include <opencv2/imgproc.hpp>
+#include <opencv2/imgproc/imgproc.hpp>
 
 using namespace cv;
 
